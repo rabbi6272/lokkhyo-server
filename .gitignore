@@ -33,9 +33,20 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# firebase-admin service account — private key, never commit
+FIREBASE_SERVICE_ACCOUNT.json
+*service*account*.json
+service-account*.json
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+AGENTS.md
+CLAUDE.md
+
+package-lock.json
+yarn.lock
