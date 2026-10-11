@@ -70,6 +70,17 @@ export async function recomputeGpa(userId: string): Promise<GpaSnapshot> {
 		);
 	}
 
+	// A semester whose last counted result disappeared has no bucket above, so
+	// its old record would otherwise linger and report a GPA built from rows
+	// that no longer exist.
+	await GpaRecord.deleteMany({
+		userId,
+		semesterId: {
+			$ne: null,
+			$nin: [...bySemester.keys()].map((id) => new Types.ObjectId(id)),
+		},
+	});
+
 	// The cumulative record is the one with a null semesterId. The unique index
 	// on (userId, semesterId) keeps it to a single document per student.
 	const cumulative = computeCgpa(
@@ -108,6 +119,21 @@ export async function readSemesterGpa(
 		gpa: number | null;
 	}>();
 	return record?.gpa ?? null;
+}
+
+/** The stored cumulative row, or an empty aggregate before any result exists. */
+export async function readCumulative(userId: string) {
+	await connect();
+	const record = await GpaRecord.findOne({ userId, semesterId: null }).lean<{
+		gpa: number | null;
+		totalCredits: number;
+		coursesCounted: number;
+	}>();
+	return {
+		cgpa: record?.gpa ?? null,
+		totalCredits: record?.totalCredits ?? 0,
+		coursesCounted: record?.coursesCounted ?? 0,
+	};
 }
 
 export async function readCgpa(userId: string): Promise<number | null> {

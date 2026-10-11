@@ -1,5 +1,6 @@
 import { applicationDefault, cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { getMessaging } from "firebase-admin/messaging";
 
 /**
  * Firebase Admin is initialised lazily and only once per process. Next.js
@@ -37,4 +38,8 @@ function app() {
 
 export function firebaseAuth() {
 	return getAuth(app());
+}
+
+export function firebaseMessaging() {
+	return getMessaging(app());
 }

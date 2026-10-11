@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 import { z } from "zod";
 
 import { parseQuery } from "@/lib/http";
@@ -75,23 +76,59 @@ export function pageRequestFromUrl(url: URL): PageRequest {
 }
 
 /**
+ * The key a list is ordered by.
+ *
+ * A cursor is only meaningful against the sort that produced it: anchoring a
+ * `date`-sorted list on `createdAt` makes the next page start at an unrelated
+ * position, skipping or repeating rows. So every list passes the same key to
+ * `.sort()`, `keysetFilter` and `buildPage`, and the three cannot drift.
+ *
+ * `kind` says how the stored value is compared: a `Date` instant, or a string
+ * such as a `YYYY-MM-DD` calendar date, which sorts correctly as text.
+ */
+export interface SortKey {
+	field: string;
+	direction: 1 | -1;
+	kind: "date" | "string";
+}
+
+export const CREATED_DESC: SortKey = {
+	field: "createdAt",
+	direction: -1,
+	kind: "date",
+};
+
+/** The Mongo `.sort()` spec for a key, with `_id` as the tie-breaker. */
+export function sortSpec(sort: SortKey): Record<string, 1 | -1> {
+	return { [sort.field]: sort.direction, _id: sort.direction };
+}
+
+function cursorValue(value: unknown): string {
+	return value instanceof Date ? value.toISOString() : String(value);
+}
+
+/**
  * Turn an over-fetched result set (limit + 1) into a page. The extra row is
  * what proves more data exists; it is never returned to the client.
  */
-export function buildPage<T extends { createdAt: Date; _id: unknown }>(
+export function buildPage<T extends { _id: unknown }>(
 	docs: T[],
 	request: PageRequest,
+	sort: SortKey = CREATED_DESC,
 ): Page<T> {
 	const hasMore = docs.length > request.limit;
 	const page = hasMore ? docs.slice(0, request.limit) : docs;
-	const last = page.at(-1);
+	const last = page.at(-1) as (T & Record<string, unknown>) | undefined;
 
 	return {
 		data: page,
 		pagination: {
 			nextCursor:
 				hasMore && last
-					? encodeCursor({ at: last.createdAt.toISOString(), id: String(last._id) })
+					? encodeCursor({
+							at: cursorValue(last[sort.field]),
+							id: String(last._id),
+						})
 					: null,
 			hasMore,
 			limit: request.limit,
@@ -100,18 +137,28 @@ export function buildPage<T extends { createdAt: Date; _id: unknown }>(
 }
 
 /**
- * Keyset predicate for a descending `(createdAt, _id)` sort. Mongo needs the
- * tie-breaker because many records can share a timestamp.
+ * Keyset predicate for `sort`. Mongo needs the `_id` tie-breaker because many
+ * records can share a sort value, and it must be compared as an ObjectId —
+ * BSON never orders a string against an ObjectId, so a string id would match
+ * nothing and silently drop every tied row.
  */
-export function keysetFilter(cursor: Cursor | null): Record<string, unknown> {
-	if (!cursor) {
+export function keysetFilter(
+	cursor: Cursor | null,
+	sort: SortKey = CREATED_DESC,
+): Record<string, unknown> {
+	if (!cursor || !Types.ObjectId.isValid(cursor.id)) {
 		return {};
 	}
-	const at = new Date(cursor.at);
+	const op = sort.direction === -1 ? "$lt" : "$gt";
+	const at = sort.kind === "date" ? new Date(cursor.at) : cursor.at;
+	if (at instanceof Date && Number.isNaN(at.getTime())) {
+		return {};
+	}
+	const id = new Types.ObjectId(cursor.id);
 	return {
 		$or: [
-			{ createdAt: { $lt: at } },
-			{ createdAt: at, _id: { $lt: cursor.id } },
+			{ [sort.field]: { [op]: at } },
+			{ [sort.field]: at, _id: { [op]: id } },
 		],
 	};
 }

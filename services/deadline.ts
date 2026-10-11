@@ -7,6 +7,8 @@ import {
 	keysetFilter,
 	type Page,
 	type PageRequest,
+	sortSpec,
+	type SortKey,
 } from "@/lib/pagination";
 import {
 	Assessment as AssessmentModel,
@@ -18,6 +20,8 @@ import type {
 	ListDeadlinesQuery,
 	UpdateDeadlineInput,
 } from "@/schemas/deadline";
+
+const DUE_ASC: SortKey = { field: "dueAt", direction: 1, kind: "date" };
 
 type Lean = { createdAt: Date; updatedAt: Date; _id: Types.ObjectId } & Record<
 	string,
@@ -49,12 +53,12 @@ export async function listDeadlines(
 		...(query.type ? { type: query.type } : {}),
 		...(query.courseId ? { courseId: new Types.ObjectId(query.courseId) } : {}),
 		...(Object.keys(dueAt).length > 0 ? { dueAt } : {}),
-		...keysetFilter(page.cursor),
+		...keysetFilter(page.cursor, DUE_ASC),
 	})
-		.sort({ dueAt: 1, _id: 1 })
+		.sort(sortSpec(DUE_ASC))
 		.limit(page.limit + 1)
 		.lean<Lean[]>();
-	return buildPage(docs, page);
+	return buildPage(docs, page, DUE_ASC);
 }
 
 export async function getDeadline(userId: string, id: string): Promise<Lean> {
@@ -107,6 +111,7 @@ export async function createDeadline(
 		type: input.type,
 		courseId: input.courseId ? new Types.ObjectId(input.courseId) : null,
 		assessmentId: input.assessmentId ? new Types.ObjectId(input.assessmentId) : null,
+		assessmentType: input.assessmentType ?? null,
 		title: input.title,
 		dueAt: new Date(input.dueAt),
 		reminderLeadTimes: input.reminderLeadTimes ?? [72, 24],
@@ -128,6 +133,12 @@ export async function updateDeadline(
 				...(input.title !== undefined ? { title: input.title } : {}),
 				...(input.dueAt !== undefined ? { dueAt: new Date(input.dueAt) } : {}),
 				...(input.type !== undefined ? { type: input.type } : {}),
+				...(input.assessmentType !== undefined
+					? { assessmentType: input.assessmentType }
+					: {}),
+				...(input.reminderLeadTimes !== undefined
+					? { reminderLeadTimes: input.reminderLeadTimes }
+					: {}),
 			},
 		},
 		{ new: true },

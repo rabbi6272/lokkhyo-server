@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+	assessmentType,
 	CourseIdSchema,
 	DeadlineIdSchema,
 	deadlineType,
@@ -22,6 +23,7 @@ export const deadlineSchema = z.object({
 	courseId: CourseIdSchema.nullable(),
 	/** Optional link when the deadline was created from an assessment. */
 	assessmentId: z.string().nullable(),
+	assessmentType: assessmentType.nullable().default(null),
 	title: z.string(),
 	/** UTC instant. Unlike routine slots, a deadline *is* an instant. */
 	dueAt: isoDateTime,
@@ -43,6 +45,7 @@ export const createDeadlineInput = z.strictObject({
 	type: deadlineType,
 	courseId: CourseIdSchema.nullable().default(null),
 	assessmentId: z.string().nullable().default(null),
+	assessmentType: assessmentType.nullable().default(null),
 	title: z.string().min(1).max(160),
 	dueAt: isoDateTime,
 	reminderLeadTimes: z
@@ -56,6 +59,7 @@ export type CreateDeadlineInput = z.infer<typeof createDeadlineInput>;
 export const updateDeadlineInput = z
 	.strictObject({
 		type: deadlineType.optional(),
+		assessmentType: assessmentType.nullable().optional(),
 		title: z.string().min(1).max(160).optional(),
 		dueAt: isoDateTime.optional(),
 		reminderLeadTimes: z.array(z.number().int().positive()).max(5).optional(),

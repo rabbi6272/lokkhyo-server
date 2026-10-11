@@ -2,16 +2,48 @@ import { Types } from "mongoose";
 
 import { connect } from "@/lib/db";
 import { notFound } from "@/lib/errors";
-import { buildPage, keysetFilter, type Page, type PageRequest } from "@/lib/pagination";
-import { Attendance as AttendanceModel, Course as CourseModel } from "@/models";
+import {
+	buildPage,
+	keysetFilter,
+	type Page,
+	type PageRequest,
+	sortSpec,
+	type SortKey,
+} from "@/lib/pagination";
+import {
+	Attendance as AttendanceModel,
+	Course as CourseModel,
+	Routine as RoutineModel,
+} from "@/models";
 import type {
 	AmendAttendanceInput,
 	ListAttendanceQuery,
 	PutAttendanceInput,
 } from "@/schemas/attendance";
 
+const DATE_DESC: SortKey = { field: "date", direction: -1, kind: "string" };
+
 /** A lean Mongo document: the service layer never speaks API shapes. */
 type Lean = { createdAt: Date; updatedAt: Date; _id: Types.ObjectId } & Record<string, unknown>;
+
+let indexesReady: Promise<void> | null = null;
+
+/**
+ * Bring the attendance indexes in line with the schema, once per process.
+ *
+ * `syncIndexes` drops indexes the schema no longer declares — here the old
+ * `(userId, courseId, date)` unique index, which would otherwise reject the
+ * second slot of a course on the same day.
+ */
+function ensureAttendanceIndexes(): Promise<void> {
+	indexesReady ??= AttendanceModel.syncIndexes()
+		.then(() => undefined)
+		.catch((error: unknown) => {
+			indexesReady = null;
+			throw error;
+		});
+	return indexesReady;
+}
 
 async function assertCourse(userId: string, courseId: string) {
 	const course = await CourseModel.findOne({
@@ -41,12 +73,12 @@ export async function listAttendance(
 					},
 				}
 			: {}),
-		...keysetFilter(page.cursor),
+		...keysetFilter(page.cursor, DATE_DESC),
 	})
-		.sort({ date: -1, _id: -1 })
+		.sort(sortSpec(DATE_DESC))
 		.limit(page.limit + 1)
 		.lean<Lean[]>();
-	return buildPage(docs, page);
+	return buildPage(docs, page, DATE_DESC);
 }
 
 /**
@@ -63,10 +95,25 @@ export async function putAttendance(
 	input: PutAttendanceInput,
 ): Promise<Lean> {
 	await connect();
-	await assertCourse(userId, courseId);
+	await ensureAttendanceIndexes();
+	const course = await assertCourse(userId, courseId);
+	const slotId = input.slotId ?? null;
+
+	// A slot id from another course (or another student) would file the
+	// session under a class that is not this one.
+	if (slotId) {
+		const slot = await RoutineModel.exists({
+			_id: new Types.ObjectId(slotId),
+			userId,
+			courseId: course._id,
+		});
+		if (!slot) {
+			throw notFound("Routine slot not found for this course");
+		}
+	}
 
 	const doc = await AttendanceModel.findOneAndUpdate(
-		{ userId, courseId: new Types.ObjectId(courseId), date: input.date },
+		{ userId, courseId: course._id, date: input.date, slotId },
 		{
 			$set: {
 				status: input.status,
@@ -128,6 +175,7 @@ export interface SummaryRollup {
 	lateCount: number;
 	excusedCount: number;
 	absentCount: number;
+	cancelledCount: number;
 	/** `null` until at least one session is recorded. */
 	percentage: number | null;
 	pendingSessions: number;
@@ -154,9 +202,13 @@ export async function attendanceSummary(
 		{ $group: { _id: "$status", count: { $sum: 1 } } },
 	]);
 
-	const counts = { present: 0, late: 0, excused: 0, absent: 0 };
+	// Statuses are stored UPPER_SNAKE; the rollup keys are their lowercase.
+	const counts = { present: 0, late: 0, excused: 0, absent: 0, cancelled: 0 };
 	for (const row of rows) {
-		counts[row._id as keyof typeof counts] = row.count;
+		const key = row._id.toLowerCase() as keyof typeof counts;
+		if (key in counts) {
+			counts[key] = row.count;
+		}
 	}
 
 	const totalSessions = counts.present + counts.late + counts.excused + counts.absent;
@@ -168,6 +220,7 @@ export async function attendanceSummary(
 		userId,
 		courseId: course._id,
 		date: { $gte: today },
+		status: { $ne: "CANCELLED" },
 	});
 
 	return {
@@ -179,6 +232,7 @@ export async function attendanceSummary(
 		lateCount: counts.late,
 		excusedCount: counts.excused,
 		absentCount: counts.absent,
+		cancelledCount: counts.cancelled,
 		percentage: totalSessions === 0 ? null : Math.round((attended / totalSessions) * 100),
 		pendingSessions,
 	};

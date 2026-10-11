@@ -1,4 +1,4 @@
-import { created, ok, parseBody, readJson } from "@/lib/http";
+import { created, okPage, parseBody, readJson } from "@/lib/http";
 import { pageRequestFromUrl } from "@/lib/pagination";
 import { route } from "@/lib/route";
 import { respond, respondPage } from "@/lib/serialize";
@@ -10,7 +10,7 @@ const devicePage = pageResponse(deviceSchema);
 
 export const GET = route(async ({ auth, request }) => {
 	const page = listDevices(auth.uid, pageRequestFromUrl(new URL(request.url)));
-	return ok(respondPage(devicePage, await page));
+	return okPage(respondPage(devicePage, await page));
 });
 
 /**

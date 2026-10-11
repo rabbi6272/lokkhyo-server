@@ -51,7 +51,6 @@ export async function authenticate(request: Request): Promise<AuthContext> {
 		{
 			$setOnInsert: {
 				firebaseUid: decoded.uid,
-				email: decoded.email ?? null,
 				name: decoded.name ?? null,
 				// Seeds the first write only, exactly like `name`: the provider's
 				// picture is a starting value, not the current truth. Refreshing it
@@ -68,7 +67,7 @@ export async function authenticate(request: Request): Promise<AuthContext> {
 				lastLoginAt: new Date(),
 			},
 		},
-		{ upsert: true, new: true, setDefaultsOnInsert: true },
+		{ upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
 	).lean<UserDocument>();
 
 	if (!user) {

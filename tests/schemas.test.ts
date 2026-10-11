@@ -12,6 +12,7 @@ import { MAX_LIMIT, limitQuery } from "@/lib/pagination";
 import { createSemesterInput, updateSemesterInput } from "@/schemas/semester";
 import { createResultInput, updateResultInput } from "@/schemas/result";
 import { replaceRoutineInput } from "@/schemas/course";
+import { updateMeInput, userSchema } from "@/schemas/user";
 
 /**
  * Contract tests for the Zod layer.
@@ -160,5 +161,58 @@ describe("routine slots", () => {
 			endTime: `${String(8 + (i % 12)).padStart(2, "0")}:30`,
 		}));
 		expect(() => replaceRoutineInput.parse({ slots })).toThrow();
+	});
+});
+
+describe("profile fields on /me", () => {
+	it("lets a student clear a field with null rather than rejecting it", () => {
+		// The edit form writes "" for "not set yet" and the client maps that to
+		// null; rejecting it would make a cleared field impossible to save.
+		expect(
+			updateMeInput.parse({
+				name: "Tanvir Ahmed",
+				university: "RUET",
+				department: null,
+				currentSemesterId: null,
+				targetCgpa: null,
+			}),
+		).toEqual({
+			name: "Tanvir Ahmed",
+			university: "RUET",
+			department: null,
+			currentSemesterId: null,
+			targetCgpa: null,
+		});
+	});
+
+	it("rejects a target outside the 0–4 scale", () => {
+		expect(() => updateMeInput.parse({ targetCgpa: 4.5 })).toThrow();
+		expect(() => updateMeInput.parse({ targetCgpa: -0.1 })).toThrow();
+		expect(updateMeInput.parse({ targetCgpa: 4 })).toEqual({ targetCgpa: 4 });
+	});
+
+	it("keeps role off the student-writable surface", () => {
+		expect(() => updateMeInput.parse({ role: "ADMIN" })).toThrow();
+	});
+
+	it("backfills the academic fields for a user created before they existed", () => {
+		// `authenticate` upserts, so a document written before this release has
+		// no academic keys at all. `respond()` throws on a failed parse, which
+		// would 500 every request from those existing users.
+		const parsed = userSchema.parse({
+			id: "656f0c9a8e1b2c3d4e5f6a7b",
+			email: "tanvir@example.com",
+			name: "Tanvir Ahmed",
+			photoUrl: null,
+			role: "STUDENT",
+			timezone: "Asia/Dhaka",
+			createdAt: "2026-01-01T00:00:00.000Z",
+			updatedAt: "2026-01-01T00:00:00.000Z",
+		});
+
+		expect(parsed.university).toBeNull();
+		expect(parsed.department).toBeNull();
+		expect(parsed.currentSemesterId).toBeNull();
+		expect(parsed.targetCgpa).toBeNull();
 	});
 });

@@ -1,15 +1,29 @@
 import { Types } from "mongoose";
 
 import { connect } from "@/lib/db";
-import { conflict, notFound } from "@/lib/errors";
-import { buildPage, keysetFilter, type Page, type PageRequest } from "@/lib/pagination";
-import { Assessment as AssessmentModel, Course as CourseModel, Result as ResultModel } from "@/models";
+import { badRequest, conflict, notFound } from "@/lib/errors";
+import {
+	buildPage,
+	keysetFilter,
+	type Page,
+	type PageRequest,
+	sortSpec,
+	type SortKey,
+} from "@/lib/pagination";
+import {
+	Assessment as AssessmentModel,
+	Course as CourseModel,
+	Deadline as DeadlineModel,
+	Result as ResultModel,
+} from "@/models";
 import { recomputeGpa } from "@/services/gpa";
 import type {
 	CreateAssessmentInput,
 	ListAssessmentsQuery,
 	UpdateAssessmentInput,
 } from "@/schemas/assessment";
+
+const DATE_DESC: SortKey = { field: "date", direction: -1, kind: "string" };
 
 /** A lean Mongo document: the service layer never speaks API shapes. */
 type Lean = { createdAt: Date; updatedAt: Date; _id: Types.ObjectId } & Record<string, unknown>;
@@ -26,12 +40,12 @@ export async function listAssessments(
 		...(query.upcoming
 			? { date: { $gte: new Date().toISOString().slice(0, 10) } }
 			: {}),
-		...keysetFilter(page.cursor),
+		...keysetFilter(page.cursor, DATE_DESC),
 	})
-		.sort({ date: -1, _id: -1 })
+		.sort(sortSpec(DATE_DESC))
 		.limit(page.limit + 1)
 		.lean<Lean[]>();
-	return buildPage(docs, page);
+	return buildPage(docs, page, DATE_DESC);
 }
 
 export async function getAssessment(userId: string, id: string): Promise<Lean> {
@@ -66,6 +80,9 @@ export async function createAssessment(
 		title: input.title,
 		date: input.date,
 		maxMarks: input.maxMarks,
+		marksObtained: input.marksObtained ?? null,
+		weight: input.weight ?? null,
+		teacherName: input.teacherName ?? null,
 	});
 	return created.toObject() as Lean;
 }
@@ -76,6 +93,24 @@ export async function updateAssessment(
 	input: UpdateAssessmentInput,
 ): Promise<Lean> {
 	await connect();
+
+	// The schema can only compare marks against a maxMarks sent in the same
+	// patch; a lone mark is checked against the stored ceiling here.
+	if (input.marksObtained != null && input.maxMarks === undefined) {
+		const existing = await AssessmentModel.findOne({
+			_id: new Types.ObjectId(id),
+			userId,
+		}).lean<{ maxMarks: number }>();
+		if (!existing) {
+			throw notFound("Assessment not found");
+		}
+		if (input.marksObtained > existing.maxMarks) {
+			throw badRequest("marksObtained cannot exceed maxMarks", {
+				field: "marksObtained",
+			});
+		}
+	}
+
 	const updated = await AssessmentModel.findOneAndUpdate(
 		{ _id: new Types.ObjectId(id), userId },
 		{ $set: input },
@@ -113,6 +148,9 @@ export async function deleteAssessment(
 		await ResultModel.deleteMany({ userId, assessmentId: objectId });
 	}
 
+	// A deadline created from this assessment reminds about something that no
+	// longer exists.
+	await DeadlineModel.deleteMany({ userId, assessmentId: objectId });
 	await AssessmentModel.deleteOne({ _id: objectId, userId });
 	await recomputeGpa(userId);
 }

@@ -12,6 +12,7 @@ import {
 	Assessment as AssessmentModel,
 	Attendance as AttendanceModel,
 	Course as CourseModel,
+	Deadline as DeadlineModel,
 	Result as ResultModel,
 	Routine as RoutineModel,
 	Semester as SemesterModel,
@@ -73,6 +74,10 @@ export async function createCourse(
 		code: input.code,
 		instructor: input.instructor ?? null,
 		credits: input.credits,
+		passMarks: input.passMarks ?? null,
+		ctWeight: input.ctWeight ?? null,
+		isLab: input.isLab ?? false,
+		courseTeachers: input.courseTeachers ?? [],
 	});
 	return created.toObject() as LeanCourse;
 }
@@ -102,6 +107,12 @@ export async function updateCourse(
 				...(input.code !== undefined ? { code: input.code } : {}),
 				...(input.instructor !== undefined ? { instructor: input.instructor } : {}),
 				...(input.credits !== undefined ? { credits: input.credits } : {}),
+				...(input.passMarks !== undefined ? { passMarks: input.passMarks } : {}),
+				...(input.ctWeight !== undefined ? { ctWeight: input.ctWeight } : {}),
+				...(input.isLab !== undefined ? { isLab: input.isLab } : {}),
+				...(input.courseTeachers !== undefined
+					? { courseTeachers: input.courseTeachers }
+					: {}),
 				...(input.semesterId
 					? { semesterId: new Types.ObjectId(input.semesterId) }
 					: {}),
@@ -138,17 +149,19 @@ export async function deleteCourse(
 	}
 
 	if (!cascade) {
-		const [attendance, assessments, results, slots] = await Promise.all([
+		const [attendance, assessments, results, slots, deadlines] = await Promise.all([
 			AttendanceModel.countDocuments({ userId, courseId: objectId }),
 			AssessmentModel.countDocuments({ userId, courseId: objectId }),
 			ResultModel.countDocuments({ userId, courseId: objectId }),
 			RoutineModel.countDocuments({ userId, courseId: objectId }),
+			DeadlineModel.countDocuments({ userId, courseId: objectId }),
 		]);
 		const dependents = {
 			attendance,
 			assessments,
 			results,
 			routineSlots: slots,
+			deadlines,
 		};
 		const total = Object.values(dependents).reduce((sum, n) => sum + n, 0);
 		if (total > 0) {
@@ -163,6 +176,7 @@ export async function deleteCourse(
 			AssessmentModel.deleteMany({ userId, courseId: objectId }),
 			ResultModel.deleteMany({ userId, courseId: objectId }),
 			RoutineModel.deleteMany({ userId, courseId: objectId }),
+			DeadlineModel.deleteMany({ userId, courseId: objectId }),
 		]);
 	}
 
@@ -172,9 +186,11 @@ export async function deleteCourse(
 
 export async function listRoutine(userId: string, courseId: string) {
 	await connect();
-	return RoutineModel.find({ userId, courseId: new Types.ObjectId(courseId) })
-		.sort({ dayOfWeek: 1, startTime: 1 })
-		.lean();
+	const slots = await RoutineModel.find({
+		userId,
+		courseId: new Types.ObjectId(courseId),
+	}).lean<RoutineRow[]>();
+	return sortByWeekday(slots);
 }
 
 /**
@@ -183,11 +199,16 @@ export async function listRoutine(userId: string, courseId: string) {
  * `PUT` rather than `PATCH` because a timetable is a bounded document: the
  * client always knows the complete set, so replacement is simpler than
  * per-slot add/remove and is idempotent without an idempotency key.
+ *
+ * Slots are reconciled by id rather than deleted and re-inserted: attendance is
+ * filed under a slot id, so regenerating every id on each edit would orphan the
+ * history of every class the student did not touch.
  */
 export async function replaceRoutine(
 	userId: string,
 	courseId: string,
 	slots: Array<{
+		id?: string;
 		dayOfWeek: string;
 		startTime: string;
 		endTime: string;
@@ -202,16 +223,56 @@ export async function replaceRoutine(
 		throw notFound("Course not found");
 	}
 
-	await RoutineModel.deleteMany({ userId, courseId: objectId });
-	if (slots.length > 0) {
+	const existing = await RoutineModel.find({ userId, courseId: objectId })
+		.select("_id")
+		.lean<Array<{ _id: Types.ObjectId }>>();
+	const existingIds = new Set(existing.map((slot) => slot._id.toHexString()));
+
+	const kept = slots.filter((slot) => slot.id !== undefined);
+	for (const slot of kept) {
+		if (!existingIds.has(slot.id as string)) {
+			throw notFound("Routine slot not found for this course");
+		}
+	}
+	const keptIds = new Set(kept.map((slot) => slot.id as string));
+
+	await RoutineModel.deleteMany({
+		userId,
+		courseId: objectId,
+		_id: { $nin: [...keptIds].map((id) => new Types.ObjectId(id)) },
+	});
+
+	await Promise.all(
+		kept.map(({ id, ...fields }) =>
+			RoutineModel.updateOne(
+				{ _id: new Types.ObjectId(id), userId, courseId: objectId },
+				{ $set: fields },
+			),
+		),
+	);
+
+	const fresh = slots.filter((slot) => slot.id === undefined);
+	if (fresh.length > 0) {
 		await RoutineModel.insertMany(
-			slots.map((slot) => ({ ...slot, userId, courseId: objectId })),
+			fresh.map((slot) => ({ ...slot, userId, courseId: objectId })),
 		);
 	}
 
-	return RoutineModel.find({ userId, courseId: objectId })
-		.sort({ dayOfWeek: 1, startTime: 1 })
-		.lean();
+	return listRoutine(userId, courseId);
+}
+
+type RoutineRow = { dayOfWeek: string; startTime: string } & Record<string, unknown>;
+
+/**
+ * Weekday order, then start time. `dayOfWeek` is stored as a name, so a Mongo
+ * sort on it would be alphabetical (FRIDAY before MONDAY).
+ */
+function sortByWeekday<T extends RoutineRow>(slots: T[]): T[] {
+	const index = (day: string) => DAY_NAMES.indexOf(day as (typeof DAY_NAMES)[number]);
+	return [...slots].sort(
+		(a, b) =>
+			index(a.dayOfWeek) - index(b.dayOfWeek) || a.startTime.localeCompare(b.startTime),
+	);
 }
 
 const DAY_NAMES = [
@@ -242,6 +303,22 @@ export async function routineForDate(
 	const target = date ?? new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date());
 	const dayOfWeek = DAY_NAMES[new Date(`${target}T12:00:00Z`).getUTCDay()];
 
+	return scheduledClasses(userId, { dayOfWeek });
+}
+
+/**
+ * Every weekly slot across all of the student's courses, each joined to its
+ * course — the whole timetable in one read, in weekday order.
+ */
+export async function routineWeek(userId: string): Promise<ScheduledClass[]> {
+	await connect();
+	return scheduledClasses(userId, {});
+}
+
+async function scheduledClasses(
+	userId: string,
+	match: { dayOfWeek?: string },
+): Promise<ScheduledClass[]> {
 	const rows = await RoutineModel.aggregate<{
 		_id: Types.ObjectId;
 		dayOfWeek: string;
@@ -252,7 +329,7 @@ export async function routineForDate(
 		title: string;
 		code: string;
 	}>([
-		{ $match: { userId, dayOfWeek } },
+		{ $match: { userId, ...match } },
 		{
 			$lookup: {
 				from: "courses",
@@ -273,10 +350,9 @@ export async function routineForDate(
 				code: "$course.code",
 			},
 		},
-		{ $sort: { startTime: 1 } },
 	]);
 
-	return rows.map((row) => ({
+	return sortByWeekday(rows).map((row) => ({
 		id: row._id,
 		courseId: row.courseId,
 		dayOfWeek: row.dayOfWeek,

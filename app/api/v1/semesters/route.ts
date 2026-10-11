@@ -1,4 +1,4 @@
-import { created, ok, parseBody, readJson } from "@/lib/http";
+import { created, okPage, parseBody, readJson } from "@/lib/http";
 import { pageRequestFromUrl } from "@/lib/pagination";
 import { route } from "@/lib/route";
 import { respond, respondPage } from "@/lib/serialize";
@@ -17,7 +17,7 @@ const semesterPage = pageResponse(semesterSchema);
  */
 export const GET = route(async ({ auth, request }) => {
 	const page = listSemesters(auth.uid, pageRequestFromUrl(new URL(request.url)));
-	return ok(respondPage(semesterPage, await page));
+	return okPage(respondPage(semesterPage, await page));
 });
 
 /**

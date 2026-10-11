@@ -1,4 +1,4 @@
-import { created, ok, parseBody, parseQuery, readJson } from "@/lib/http";
+import { created, okPage, parseBody, parseQuery, readJson } from "@/lib/http";
 import { pageRequestFromUrl } from "@/lib/pagination";
 import { route } from "@/lib/route";
 import { respond, respondPage } from "@/lib/serialize";
@@ -14,7 +14,7 @@ export const GET = route(async ({ auth, request, query }) => {
 		courseId: undefined,
 		semesterId: query.get("semesterId") ?? undefined,
 	});
-	return ok(respondPage(coursePage, await listCourses(auth.uid, page, filters)));
+	return okPage(respondPage(coursePage, await listCourses(auth.uid, page, filters)));
 });
 
 export const POST = route(async ({ auth, request }) => {

@@ -1,9 +1,10 @@
 import { internal } from "@/lib/errors";
-import { ok, parseBody, readJson } from "@/lib/http";
+import { noContent, ok, parseBody, readJson } from "@/lib/http";
 import { User as UserModel } from "@/models";
 import { route } from "@/lib/route";
 import { respond } from "@/lib/serialize";
 import { updateMeInput, userSchema } from "@/schemas/user";
+import { deleteAccount } from "@/services/account";
 
 /**
  * `GET /api/v1/me`
@@ -39,4 +40,17 @@ export const PATCH = route(async ({ request, auth }) => {
 	}
 
 	return ok(respond(userSchema, updated));
+});
+
+/**
+ * `DELETE /api/v1/me`
+ *
+ * Purges every record the student owns, then the profile. The Firebase user is
+ * deleted by the client afterwards: the server never holds the credential. A
+ * request that arrives after this (with a still-valid token) simply provisions
+ * a fresh, empty profile, which is the correct state for a deleted account.
+ */
+export const DELETE = route(async ({ auth }) => {
+	await deleteAccount(auth.uid, auth.user.photoUrl ?? null);
+	return noContent();
 });

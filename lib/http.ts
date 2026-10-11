@@ -6,6 +6,15 @@ export function ok<T>(data: T, status = 200): Response {
 	return Response.json({ data }, { status });
 }
 
+/**
+ * A list response. The page is already the documented envelope
+ * `{ data, pagination }`, so it is sent as-is — wrapping it with `ok()` would
+ * nest it as `{ data: { data, pagination } }`.
+ */
+export function okPage<T extends { data: unknown; pagination: unknown }>(page: T): Response {
+	return Response.json(page, { status: 200 });
+}
+
 export function created<T>(data: T): Response {
 	return ok(data, 201);
 }

@@ -6,14 +6,14 @@ import {
 	isoDateTime,
 	RoutineIdSchema,
 	SemesterIdSchema,
-	UserIdSchema,
+	OwnerUidSchema,
 	wallClockTime,
 	dayOfWeek,
 } from "@/schemas/common";
 
 export const courseSchema = z.object({
 	id: CourseIdSchema,
-	userId: UserIdSchema,
+	userId: OwnerUidSchema,
 	semesterId: SemesterIdSchema,
 	title: z.string(),
 	code: z.string(),
@@ -23,6 +23,11 @@ export const courseSchema = z.object({
 	 * copy at write time so a later edit here cannot rewrite history.
 	 */
 	credits: z.number(),
+	// Defaults keep documents written before these fields existed parseable.
+	passMarks: z.number().nullable().default(null),
+	ctWeight: z.number().nullable().default(null),
+	isLab: z.boolean().default(false),
+	courseTeachers: z.array(z.string()).default([]),
 	createdAt: isoDateTime,
 	updatedAt: isoDateTime,
 });
@@ -35,6 +40,10 @@ export const createCourseInput = z.strictObject({
 	code: z.string().min(1).max(32),
 	instructor: z.string().min(1).max(120).optional(),
 	credits: credits.default(3),
+	passMarks: z.number().min(0).max(100).nullable().optional(),
+	ctWeight: z.number().min(0).max(100).nullable().optional(),
+	isLab: z.boolean().optional(),
+	courseTeachers: z.array(z.string().min(1).max(120)).max(10).optional(),
 });
 
 export type CreateCourseInput = z.infer<typeof createCourseInput>;
@@ -46,6 +55,10 @@ export const updateCourseInput = z
 		instructor: z.string().min(1).max(120).nullable().optional(),
 		credits: credits.optional(),
 		semesterId: SemesterIdSchema.optional(),
+		passMarks: z.number().min(0).max(100).nullable().optional(),
+		ctWeight: z.number().min(0).max(100).nullable().optional(),
+		isLab: z.boolean().optional(),
+		courseTeachers: z.array(z.string().min(1).max(120)).max(10).optional(),
 	})
 	.partial();
 
@@ -97,7 +110,27 @@ export const routineSchema = z.array(routineEntrySchema);
  * naturally idempotent — no `Idempotency-Key` needed.
  */
 export const replaceRoutineInput = z.strictObject({
-	slots: z.array(routineSlotSchema).max(20),
+	slots: z
+		.array(
+			z
+				.strictObject({
+					/**
+					 * An existing slot's id keeps that slot (and the attendance
+					 * filed under it); a slot without one is created. Slots of the
+					 * course left out of the set are deleted.
+					 */
+					id: RoutineIdSchema.optional(),
+					dayOfWeek,
+					startTime: wallClockTime,
+					endTime: wallClockTime,
+					room: z.string().max(80).nullable().default(null),
+				})
+				.refine((slot) => slot.endTime > slot.startTime, {
+					message: "endTime must be after startTime",
+					path: ["endTime"],
+				}),
+		)
+		.max(20),
 });
 
 export type ReplaceRoutineInput = z.infer<typeof replaceRoutineInput>;

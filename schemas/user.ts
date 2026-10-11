@@ -10,6 +10,14 @@ export const userSchema = z.object({
 	role: userRole,
 	/** IANA zone, e.g. `Asia/Dhaka`. Drives every scheduled reminder. */
 	timezone: z.string(),
+	/** Academic context, all student-owned. `.default` keeps documents written
+	 * before these columns existed valid, since `respond()` throws otherwise. */
+	university: z.string().nullable().default(null),
+	department: z.string().nullable().default(null),
+	/** The student's active `semesters` id, or null when none is chosen. */
+	currentSemesterId: z.string().nullable().default(null),
+	/** RUET scale, 0–4. Null means "no target set yet". */
+	targetCgpa: z.number().nullable().default(null),
 	createdAt: isoDateTime,
 	updatedAt: isoDateTime,
 });
@@ -19,6 +27,15 @@ export type User = z.infer<typeof userSchema>;
 export const updateMeInput = z.strictObject({
 	name: z.string().min(1).max(120).optional(),
 	timezone: z.string().min(1).max(64).optional(),
+	/**
+	 * `null` clears a value rather than being rejected — the edit form writes
+	 * `""` for "not set yet", which the client maps to null.
+	 */
+	university: z.string().max(160).nullable().optional(),
+	department: z.string().max(160).nullable().optional(),
+	currentSemesterId: z.string().max(64).nullable().optional(),
+	/** RUET scale, 0–4. */
+	targetCgpa: z.number().min(0).max(4).nullable().optional(),
 });
 
 export type UpdateMeInput = z.infer<typeof updateMeInput>;

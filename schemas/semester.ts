@@ -1,14 +1,25 @@
 import { z } from "zod";
 
 import { badRequest } from "@/lib/errors";
-import { calendarDate, isoDateTime, SemesterIdSchema, UserIdSchema } from "@/schemas/common";
+import { calendarDate, isoDateTime, SemesterIdSchema, OwnerUidSchema } from "@/schemas/common";
+
+export const semesterStatus = z.enum(["ACTIVE", "ARCHIVED"]);
+export type SemesterStatus = z.infer<typeof semesterStatus>;
+
+const targetGpa = z.number().min(0).max(4);
+const totalWeeks = z.number().int().min(1).max(52);
 
 export const semesterSchema = z.object({
 	id: SemesterIdSchema,
-	userId: UserIdSchema,
+	userId: OwnerUidSchema,
 	name: z.string(),
 	startDate: calendarDate,
 	endDate: calendarDate,
+	// Defaults let documents written before these fields existed still parse;
+	// without them `respond()` would 500 on every older semester.
+	status: semesterStatus.default("ACTIVE"),
+	targetGpa: targetGpa.nullable().default(null),
+	totalWeeks: totalWeeks.nullable().default(null),
 	createdAt: isoDateTime,
 	updatedAt: isoDateTime,
 });
@@ -28,9 +39,17 @@ export const createSemesterInput = z
 	.strictObject({
 		name: z.string().min(1).max(80),
 		startDate: calendarDate,
-		endDate: calendarDate,
+		/** Optional when `totalWeeks` is sent: it is then derived. */
+		endDate: calendarDate.optional(),
+		status: semesterStatus.optional(),
+		targetGpa: targetGpa.nullable().optional(),
+		totalWeeks: totalWeeks.nullable().optional(),
 	})
-	.refine((data) => data.endDate >= data.startDate, {
+	.refine((data) => data.endDate !== undefined || typeof data.totalWeeks === "number", {
+		message: "Send endDate, totalWeeks, or both",
+		path: ["endDate"],
+	})
+	.refine((data) => data.endDate === undefined || data.endDate >= data.startDate, {
 		message: "endDate must be on or after startDate",
 		path: ["endDate"],
 	});
@@ -48,6 +67,9 @@ export const updateSemesterInput = z
 		name: z.string().min(1).max(80).optional(),
 		startDate: calendarDate.optional(),
 		endDate: calendarDate.optional(),
+		status: semesterStatus.optional(),
+		targetGpa: targetGpa.nullable().optional(),
+		totalWeeks: totalWeeks.nullable().optional(),
 	})
 	.partial()
 	.refine(
@@ -71,6 +93,16 @@ export function assertSemesterDates(startDate: string, endDate: string): void {
 			field: "endDate",
 		});
 	}
+}
+
+/**
+ * The last day of a term of `weeks` teaching weeks starting on `startDate`.
+ * Pure date arithmetic on `YYYY-MM-DD`, done in UTC so no timezone can shift it.
+ */
+export function endDateFromWeeks(startDate: string, weeks: number): string {
+	const date = new Date(`${startDate}T00:00:00Z`);
+	date.setUTCDate(date.getUTCDate() + weeks * 7 - 1);
+	return date.toISOString().slice(0, 10);
 }
 
 export const semesterIdParams = z.object({ id: SemesterIdSchema });

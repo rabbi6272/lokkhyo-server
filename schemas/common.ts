@@ -29,6 +29,15 @@ const brandedId = <Brand extends string>() =>
 export const UserIdSchema = brandedId<"UserId">();
 export type UserId = z.infer<typeof UserIdSchema>;
 
+/**
+ * The owner of a record: the Firebase uid, which is what every `userId` column
+ * stores. Not an ObjectId — Firebase uids are 28 alphanumeric characters — so
+ * it must not be validated as one, or every response carrying it would fail
+ * its own contract.
+ */
+export const OwnerUidSchema = z.string().min(1).max(128).brand<"OwnerUid">();
+export type OwnerUid = z.infer<typeof OwnerUidSchema>;
+
 export const SemesterIdSchema = brandedId<"SemesterId">();
 export type SemesterId = z.infer<typeof SemesterIdSchema>;
 
@@ -98,10 +107,13 @@ export const attendanceStatus = z.enum([
 	"ABSENT",
 	"LATE",
 	"EXCUSED",
+	/** The class did not happen; excluded from every count. */
+	"CANCELLED",
 ]);
 export type AttendanceStatus = z.infer<typeof attendanceStatus>;
 
 export const assessmentType = z.enum([
+	"CT",
 	"ASSIGNMENT",
 	"QUIZ",
 	"MIDTERM",

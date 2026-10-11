@@ -15,6 +15,7 @@ export const attendanceSchema = z.object({
 	courseId: CourseIdSchema,
 	/** Calendar date of the session, `YYYY-MM-DD`. */
 	date: calendarDate,
+	slotId: z.string().nullable().default(null),
 	status: attendanceStatus,
 	note: z.string().max(280).nullable(),
 	createdAt: isoDateTime,
@@ -32,6 +33,8 @@ export type Attendance = z.infer<typeof attendanceSchema>;
  */
 export const putAttendanceInput = z.strictObject({
 	date: calendarDate,
+	/** A routine slot id of this course; omit for a course-day record. */
+	slotId: z.string().regex(/^[a-f\d]{24}$/i, "Must be a routine slot id").nullable().optional(),
 	status: attendanceStatus,
 	note: z.string().max(280).optional(),
 });
@@ -78,6 +81,7 @@ export const attendanceSummarySchema = z.object({
 	lateCount: z.number().int().nonnegative(),
 	excusedCount: z.number().int().nonnegative(),
 	absentCount: z.number().int().nonnegative(),
+	cancelledCount: z.number().int().nonnegative().default(0),
 	/** `null` when no sessions have been recorded yet. */
 	percentage: percentage.nullable(),
 	/** Sessions that may still be marked, i.e. today or later. */

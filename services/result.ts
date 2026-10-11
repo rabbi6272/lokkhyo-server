@@ -101,7 +101,8 @@ export async function createResult(userId: string, input: CreateResultInput) {
 	const { cgpa } = await recomputeGpa(userId);
 	const semesterGpa = await readSemesterGpa(userId, course.semesterId);
 
-	return { result: created.toObject(), semesterGpa, cgpa };
+	const [result] = decorateResults([created.toObject()], cgpa);
+	return { result, semesterGpa, cgpa };
 }
 
 /**
@@ -154,16 +155,21 @@ export async function updateResult(
 		{ new: true },
 	);
 
+	if (!updated) {
+		throw notFound("Result not found");
+	}
+
 	// Amending a superseded attempt would leave the GPA stale, so recompute
 	// whenever the amended row is the one being counted.
-	if (updated?.isLatestAttempt) {
+	if (updated.isLatestAttempt) {
 		await recomputeGpa(userId);
 	}
 
 	const cgpa = await readCgpa(userId);
 	const semesterGpa = await readSemesterGpa(userId, existing.semesterId);
 
-	return { result: updated?.toObject() ?? null, semesterGpa, cgpa };
+	const [result] = decorateResults([updated.toObject()], cgpa);
+	return { result, semesterGpa, cgpa };
 }
 
 export async function deleteResult(userId: string, resultId: string) {

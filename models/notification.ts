@@ -1,4 +1,6 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+
+import { defineModel } from "@/lib/model";
 
 const DeviceSchema = new Schema(
 	{
@@ -20,7 +22,7 @@ DeviceSchema.index({ userId: 1, fcmToken: 1 }, { unique: true });
 
 export type DeviceDocument = InferSchemaType<typeof DeviceSchema> & { _id: unknown };
 
-export const Device = model("Device", DeviceSchema);
+export const Device = defineModel("Device", DeviceSchema);
 
 const NotificationPrefsSchema = new Schema(
 	{
@@ -54,7 +56,7 @@ export type NotificationPrefsDocument = InferSchemaType<
 	typeof NotificationPrefsSchema
 > & { _id: unknown };
 
-export const NotificationPrefs = model("NotificationPrefs", NotificationPrefsSchema);
+export const NotificationPrefs = defineModel("NotificationPrefs", NotificationPrefsSchema);
 
 const NotificationSchema = new Schema(
 	{
@@ -80,4 +82,4 @@ export type NotificationDocument = InferSchemaType<typeof NotificationSchema> & 
 	_id: unknown;
 };
 
-export const Notification = model("Notification", NotificationSchema);
+export const Notification = defineModel("Notification", NotificationSchema);

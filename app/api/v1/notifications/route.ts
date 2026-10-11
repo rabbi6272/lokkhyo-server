@@ -1,4 +1,4 @@
-import { ok, parseQuery } from "@/lib/http";
+import { okPage, parseQuery } from "@/lib/http";
 import { pageRequestFromUrl } from "@/lib/pagination";
 import { route } from "@/lib/route";
 import { respondPage } from "@/lib/serialize";
@@ -18,5 +18,5 @@ export const GET = route(async ({ auth, request, query }) => {
 		pageRequestFromUrl(new URL(request.url)),
 		filters,
 	);
-	return ok(respondPage(notificationPage, page));
+	return okPage(respondPage(notificationPage, page));
 });

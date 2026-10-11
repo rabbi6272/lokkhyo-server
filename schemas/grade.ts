@@ -42,6 +42,20 @@ export const semesterGpaSchema = z.object({
 export type SemesterGpa = z.infer<typeof semesterGpaSchema>;
 
 /**
+ * `GET /me/cgpa` — the stored cumulative aggregate.
+ *
+ * `totalCredits` is the counted (GPA-bearing) credit sum, not credits earned;
+ * classification and earned credits belong to `/me/degree-status`.
+ */
+export const cgpaSchema = z.object({
+	cgpa: z.number().nullable(),
+	totalCredits: z.number().nonnegative(),
+	coursesCounted: z.number().int().nonnegative(),
+});
+
+export type Cgpa = z.infer<typeof cgpaSchema>;
+
+/**
  * A result as returned, with the grade-improvement flag attached.
  *
  * The flag is derived on read rather than stored, so it can never disagree with

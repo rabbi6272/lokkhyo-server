@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 
-import { Schema, model } from "mongoose";
+import { Schema } from "mongoose";
+
+import { defineModel } from "@/lib/model";
 
 import { AppError, ErrorCode } from "@/lib/errors";
 import { connect } from "@/lib/db";
@@ -38,7 +40,7 @@ IdempotencyKeySchema.index({ userId: 1, key: 1 }, { unique: true });
 // Mongo evicts expired claims for us, so the collection cannot grow unbounded.
 IdempotencyKeySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-const IdempotencyKey = model("IdempotencyKey", IdempotencyKeySchema);
+const IdempotencyKey = defineModel("IdempotencyKey", IdempotencyKeySchema);
 
 const DUPLICATE_KEY = 11000;
 

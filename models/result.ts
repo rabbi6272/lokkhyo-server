@@ -1,4 +1,6 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+
+import { defineModel } from "@/lib/model";
 
 const ResultSchema = new Schema(
 	{
@@ -56,7 +58,7 @@ ResultSchema.index({ userId: 1, courseId: 1, attempt: -1 });
 
 export type ResultDocument = InferSchemaType<typeof ResultSchema> & { _id: unknown };
 
-export const Result = model("Result", ResultSchema);
+export const Result = defineModel("Result", ResultSchema);
 
 const GpaRecordSchema = new Schema(
 	{
@@ -82,4 +84,4 @@ GpaRecordSchema.index({ userId: 1, semesterId: 1 }, { unique: true });
 
 export type GpaRecordDocument = InferSchemaType<typeof GpaRecordSchema> & { _id: unknown };
 
-export const GpaRecord = model("GpaRecord", GpaRecordSchema);
+export const GpaRecord = defineModel("GpaRecord", GpaRecordSchema);

@@ -2,7 +2,7 @@ import { noContent, ok, parseBody, parseParams, readJson } from "@/lib/http";
 import { route } from "@/lib/route";
 import { respond } from "@/lib/serialize";
 import { resultIdParams, updateResultInput } from "@/schemas/result";
-import { resultWithFlagSchema } from "@/schemas/grade";
+import { resultWriteResponseSchema } from "@/schemas/grade";
 import { deleteResult, updateResult } from "@/services/result";
 
 /**
@@ -16,7 +16,7 @@ export const PUT = route(async ({ auth, params, request }) => {
 	const { id } = parseParams(resultIdParams, params);
 	const input = parseBody(updateResultInput, await readJson(request));
 	const outcome = await updateResult(auth.uid, id, input);
-	return ok(respond(resultWithFlagSchema, outcome.result));
+	return ok(respond(resultWriteResponseSchema, outcome));
 });
 
 /**

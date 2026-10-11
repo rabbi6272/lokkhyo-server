@@ -1,9 +1,9 @@
-import { created, ok, parseBody, parseQuery, readJson } from "@/lib/http";
+import { created, okPage, parseBody, parseQuery, readJson } from "@/lib/http";
 import { pageRequestFromUrl } from "@/lib/pagination";
 import { route } from "@/lib/route";
 import { respond, respondPage } from "@/lib/serialize";
 import { pageResponse } from "@/schemas/common";
-import { resultWithFlagSchema } from "@/schemas/grade";
+import { resultWithFlagSchema, resultWriteResponseSchema } from "@/schemas/grade";
 import { createResultInput, listResultsQuery } from "@/schemas/result";
 import { createResult, listResults } from "@/services/result";
 import { withIdempotency } from "@/lib/idempotency";
@@ -20,7 +20,7 @@ export const GET = route(async ({ auth, request, query }) => {
 		pageRequestFromUrl(new URL(request.url)),
 		filters,
 	);
-	return ok(respondPage(resultPage, page));
+	return okPage(respondPage(resultPage, page));
 });
 
 /**
@@ -40,6 +40,6 @@ export const POST = route(async ({ auth, request }) => {
 
 	return withIdempotency(request, auth.uid, input, async () => {
 		const outcome = await createResult(auth.uid, input);
-		return created(respond(resultWithFlagSchema, outcome.result));
+		return created(respond(resultWriteResponseSchema, outcome));
 	});
 });

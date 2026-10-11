@@ -47,3 +47,7 @@ export {
 	type NotificationDocument,
 	type NotificationPrefsDocument,
 } from "@/models/notification";
+export {
+	PushClaim,
+	type PushClaimDocument,
+} from "@/models/pushClaim";

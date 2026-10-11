@@ -1,4 +1,6 @@
-import { Schema, model, type InferSchemaType } from "mongoose";
+import { Schema, type InferSchemaType } from "mongoose";
+
+import { defineModel } from "@/lib/model";
 
 const CourseSchema = new Schema(
 	{
@@ -13,6 +15,14 @@ const CourseSchema = new Schema(
 		 * semester's transcript.
 		 */
 		credits: { type: Number, required: true, default: 3 },
+		/**
+		 * Course-component settings the app's CT-progress view uses. They do not
+		 * feed the GPA engine, which works from results alone.
+		 */
+		passMarks: { type: Number, default: null },
+		ctWeight: { type: Number, default: null },
+		isLab: { type: Boolean, default: false },
+		courseTeachers: { type: [String], default: [] },
 	},
 	{ timestamps: true, collection: "courses", versionKey: false },
 );
@@ -22,7 +32,7 @@ CourseSchema.index({ userId: 1, code: 1 });
 
 export type CourseDocument = InferSchemaType<typeof CourseSchema> & { _id: unknown };
 
-export const Course = model("Course", CourseSchema);
+export const Course = defineModel("Course", CourseSchema);
 
 /**
  * A weekly recurring class slot. Stored as a day plus wall-clock strings rather
@@ -50,4 +60,4 @@ RoutineSchema.index({ userId: 1, dayOfWeek: 1, startTime: 1 });
 
 export type RoutineDocument = InferSchemaType<typeof RoutineSchema> & { _id: unknown };
 
-export const Routine = model("Routine", RoutineSchema);
+export const Routine = defineModel("Routine", RoutineSchema);

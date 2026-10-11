@@ -7,6 +7,8 @@ import {
 	keysetFilter,
 	type Page,
 	type PageRequest,
+	sortSpec,
+	type SortKey,
 } from "@/lib/pagination";
 import { Device as DeviceModel, Notification as NotificationModel, NotificationPrefs as NotificationPrefsModel } from "@/models";
 import type { UpdateNotificationPrefsInput } from "@/schemas/user";
@@ -15,6 +17,8 @@ import type {
 	MarkNotificationsReadInput,
 	RegisterDeviceInput,
 } from "@/schemas/notification";
+
+const LAST_SEEN_DESC: SortKey = { field: "lastSeenAt", direction: -1, kind: "date" };
 
 type Lean = { createdAt: Date; updatedAt: Date; _id: Types.ObjectId } & Record<
 	string,
@@ -49,11 +53,11 @@ export async function registerDevice(userId: string, input: RegisterDeviceInput)
 
 export async function listDevices(userId: string, page: PageRequest): Promise<Page<Lean>> {
 	await connect();
-	const docs = await DeviceModel.find({ userId, ...keysetFilter(page.cursor) })
-		.sort({ lastSeenAt: -1, _id: -1 })
+	const docs = await DeviceModel.find({ userId, ...keysetFilter(page.cursor, LAST_SEEN_DESC) })
+		.sort(sortSpec(LAST_SEEN_DESC))
 		.limit(page.limit + 1)
 		.lean<Lean[]>();
-	return buildPage(docs, page);
+	return buildPage(docs, page, LAST_SEEN_DESC);
 }
 
 /**
@@ -151,9 +155,13 @@ export async function updateNotificationPrefs(
 				...(input.attendanceCutoffHour !== undefined
 					? { attendanceCutoffHour: input.attendanceCutoffHour }
 					: {}),
-				...(input.categoriesEnabled !== undefined
-					? { categoriesEnabled: input.categoriesEnabled }
-					: {}),
+				// Per key, not the whole object: a patch toggling one category
+				// must not reset the others the client did not mention.
+				...Object.fromEntries(
+					Object.entries(input.categoriesEnabled ?? {})
+						.filter(([, enabled]) => enabled !== undefined)
+						.map(([category, enabled]) => [`categoriesEnabled.${category}`, enabled]),
+				),
 			},
 		},
 		{ upsert: true, new: true, setDefaultsOnInsert: true },
