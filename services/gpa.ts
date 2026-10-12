@@ -127,11 +127,17 @@ export async function readCumulative(userId: string) {
 	const record = await GpaRecord.findOne({ userId, semesterId: null }).lean<{
 		gpa: number | null;
 		totalCredits: number;
+		totalWeightedPoints: number;
 		coursesCounted: number;
 	}>();
 	return {
 		cgpa: record?.gpa ?? null,
 		totalCredits: record?.totalCredits ?? 0,
+		// The unrounded numerator, served alongside the rounded CGPA. A client
+		// that projects a future CGPA needs the exact sum: rebuilding it as
+		// `gpa * totalCredits` is off by up to `0.005 * totalCredits`, which is
+		// enough to move a projected figure across a classification boundary.
+		totalWeightedPoints: record?.totalWeightedPoints ?? 0,
 		coursesCounted: record?.coursesCounted ?? 0,
 	};
 }

@@ -168,11 +168,37 @@ describe("routine", () => {
 
 describe("cgpa", () => {
 	it("is CGPA-shaped, not degree-status-shaped", () => {
-		expect(cgpaSchema.parse({ cgpa: 3.42, totalCredits: 18, coursesCounted: 6 })).toEqual({
+		expect(
+			cgpaSchema.parse({
+				cgpa: 3.42,
+				totalCredits: 18,
+				totalWeightedPoints: 61.56,
+				coursesCounted: 6,
+			}),
+		).toEqual({
 			cgpa: 3.42,
 			totalCredits: 18,
+			totalWeightedPoints: 61.56,
 			coursesCounted: 6,
 		});
-		expect(() => cgpaSchema.parse({ cgpa: 3.42, classification: "FIRST_CLASS" })).toThrow();
+		expect(() =>
+			cgpaSchema.parse({ cgpa: 3.42, classification: "FIRST_CLASS" }),
+		).toThrow();
+	});
+
+	it("serves the unrounded numerator so a client need not rebuild it", () => {
+		// `cgpa` is rounded to 2dp; the numerator is what a projection needs to
+		// stay exact. If it were missing, `cgpa * totalCredits` would be off by
+		// up to `0.005 * totalCredits`.
+		const parsed = cgpaSchema.parse({
+			cgpa: 2.94,
+			totalCredits: 12,
+			totalWeightedPoints: 35.25,
+			coursesCounted: 5,
+		});
+		// The two must be consistent: numerator / credits rounds back to cgpa.
+		expect(Math.round((parsed.totalWeightedPoints / parsed.totalCredits) * 100) / 100).toBe(
+			parsed.cgpa,
+		);
 	});
 });

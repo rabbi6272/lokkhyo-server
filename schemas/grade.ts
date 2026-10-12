@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+	classification,
 	CourseIdSchema,
 	isoDateTime,
 	letterGrade,
@@ -16,19 +17,26 @@ import {
  * engine's DTO fails the build here instead of drifting quietly.
  */
 export const gradingScaleSchema = z.object({
-	scale: z.string(),
-	bands: z.array(
+	/** One band per letter grade, `I` last, ordered by descending percentage. */
+	scale: z.array(
 		z.object({
-			letterGrade: z.string(),
-			/** `null` for `I`, which is asserted rather than earned. */
+			letterGrade,
+			/** `null` only for `I`, which is asserted rather than earned. */
 			minPercentage: z.number().nullable(),
 			gradePoint: z.number().nullable(),
-			threshold: z.string().nullable(),
-			countsAsEarnedCredit: z.boolean(),
 			countsTowardGPA: z.boolean(),
+			countsAsEarnedCredit: z.boolean(),
 		}),
 	),
 	degreeCgpaThreshold: z.number(),
+	/** The CGPA bands the degree classification is read off. */
+	classificationBoundaries: z.array(
+		z.object({
+			classification,
+			/** `null` for the terminal band, which has no floor. */
+			minCgpa: z.number().nullable(),
+		}),
+	),
 });
 
 export type GradingScale = z.infer<typeof gradingScaleSchema>;
@@ -46,10 +54,16 @@ export type SemesterGpa = z.infer<typeof semesterGpaSchema>;
  *
  * `totalCredits` is the counted (GPA-bearing) credit sum, not credits earned;
  * classification and earned credits belong to `/me/degree-status`.
+ *
+ * `totalWeightedPoints` is the unrounded numerator behind `cgpa`. It is served
+ * because `cgpa` alone is rounded to 2dp, and a client projecting a future
+ * CGPA would otherwise have to rebuild the numerator as `cgpa * totalCredits`
+ * — reintroducing the rounding error that computing-on-write exists to avoid.
  */
 export const cgpaSchema = z.object({
 	cgpa: z.number().nullable(),
 	totalCredits: z.number().nonnegative(),
+	totalWeightedPoints: z.number().nonnegative(),
 	coursesCounted: z.number().int().nonnegative(),
 });
 
