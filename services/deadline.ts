@@ -141,7 +141,7 @@ export async function updateDeadline(
 					: {}),
 			},
 		},
-		{ new: true },
+		{ returnDocument: "after" },
 	).lean<Lean>();
 	if (!updated) {
 		throw notFound("Deadline not found");

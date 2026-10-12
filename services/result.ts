@@ -152,7 +152,7 @@ export async function updateResult(
 				countsAsEarnedCredit: derived.countsAsEarnedCredit,
 			},
 		},
-		{ new: true },
+		{ returnDocument: "after" },
 	);
 
 	if (!updated) {

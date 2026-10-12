@@ -120,7 +120,7 @@ export async function putAttendance(
 				note: input.note ?? null,
 			},
 		},
-		{ upsert: true, new: true, setDefaultsOnInsert: true },
+		{ upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
 	).lean<Lean>();
 
 	return doc;
@@ -140,7 +140,7 @@ export async function updateAttendance(
 				...(input.note !== undefined ? { note: input.note } : {}),
 			},
 		},
-		{ new: true },
+		{ returnDocument: "after" },
 	).lean<Lean>();
 
 	if (!updated) {

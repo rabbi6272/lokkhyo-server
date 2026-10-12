@@ -46,7 +46,7 @@ export async function registerDevice(userId: string, input: RegisterDeviceInput)
 				lastSeenAt: new Date(),
 			},
 		},
-		{ upsert: true, new: true, setDefaultsOnInsert: true },
+		{ upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
 	);
 	return doc.toObject();
 }
@@ -131,7 +131,7 @@ export async function getNotificationPrefs(userId: string) {
 	const doc = await NotificationPrefsModel.findOneAndUpdate(
 		{ userId },
 		{ $setOnInsert: { userId } },
-		{ upsert: true, new: true, setDefaultsOnInsert: true },
+		{ upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
 	);
 	return doc.toObject();
 }
@@ -167,7 +167,7 @@ export async function updateNotificationPrefs(
 				),
 			},
 		},
-		{ upsert: true, new: true, setDefaultsOnInsert: true },
+		{ upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
 	);
 	return doc.toObject();
 }

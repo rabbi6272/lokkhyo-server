@@ -134,7 +134,7 @@ async function savePhotoUrl(userId: string, photoUrl: string | null): Promise<Le
 	const updated = await User.findOneAndUpdate(
 		{ firebaseUid: userId },
 		{ $set: { photoUrl } },
-		{ new: true },
+		{ returnDocument: "after" },
 	).lean<UserDocument>();
 
 	if (!updated) {

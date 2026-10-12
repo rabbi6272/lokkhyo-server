@@ -30,7 +30,7 @@ export const PATCH = route(async ({ request, auth }) => {
 	const updated = await UserModel.findOneAndUpdate(
 		{ firebaseUid: auth.uid },
 		{ $set: input },
-		{ new: true },
+		{ returnDocument: "after" },
 	).lean();
 
 	if (!updated) {

@@ -118,7 +118,7 @@ export async function updateCourse(
 					: {}),
 			},
 		},
-		{ new: true },
+		{ returnDocument: "after" },
 	).lean<LeanCourse>();
 
 	if (!updated) {

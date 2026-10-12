@@ -95,7 +95,7 @@ export async function updateSemester(
 	const updated = await SemesterModel.findOneAndUpdate(
 		{ _id: new Types.ObjectId(id), userId },
 		{ $set: { ...input, endDate } },
-		{ new: true },
+		{ returnDocument: "after" },
 	).lean<Lean>();
 
 	if (!updated) {
@@ -173,7 +173,7 @@ export async function activateSemester(userId: string, id: string): Promise<Lean
 	const activated = await SemesterModel.findOneAndUpdate(
 		{ _id: objectId, userId },
 		{ $set: { status: "ACTIVE" } },
-		{ new: true },
+		{ returnDocument: "after" },
 	).lean<Lean>();
 	await UserModel.updateOne({ firebaseUid: userId }, { $set: { currentSemesterId: id } });
 

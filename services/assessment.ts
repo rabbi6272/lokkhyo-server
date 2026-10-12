@@ -114,7 +114,7 @@ export async function updateAssessment(
 	const updated = await AssessmentModel.findOneAndUpdate(
 		{ _id: new Types.ObjectId(id), userId },
 		{ $set: input },
-		{ new: true },
+		{ returnDocument: "after" },
 	).lean<Lean>();
 	if (!updated) {
 		throw notFound("Assessment not found");
