@@ -31,6 +31,13 @@ const NotificationPrefsSchema = new Schema(
 		/** Local wall-clock times. The cron job matches these per user. */
 		morningRoutineTime: { type: String, default: "07:00" },
 		eveningAttendanceTime: { type: String, default: "20:00" },
+		/**
+		 * The time of day assessment reminders are scheduled for. Assessment
+		 * reminders are local on-device notifications rather than pushes, so
+		 * nothing on the server reads this — it lives here so the time follows
+		 * the student across devices like every other preference.
+		 */
+		assessmentReminderTime: { type: String, default: "07:00" },
 		categoriesEnabled: {
 			type: new Schema(
 				{

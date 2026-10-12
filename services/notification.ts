@@ -152,6 +152,9 @@ export async function updateNotificationPrefs(
 				...(input.eveningAttendanceTime !== undefined
 					? { eveningAttendanceTime: input.eveningAttendanceTime }
 					: {}),
+				...(input.assessmentReminderTime !== undefined
+					? { assessmentReminderTime: input.assessmentReminderTime }
+					: {}),
 				...(input.attendanceCutoffHour !== undefined
 					? { attendanceCutoffHour: input.attendanceCutoffHour }
 					: {}),

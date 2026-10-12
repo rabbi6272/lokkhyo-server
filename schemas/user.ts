@@ -48,6 +48,8 @@ export const notificationPrefsSchema = z.object({
 	timezone: z.string(),
 	morningRoutineTime: localTime,
 	eveningAttendanceTime: localTime,
+	/** Time of day for device-local assessment reminders. */
+	assessmentReminderTime: localTime,
 	/** Per-category opt-in. Absent keys are treated as enabled. */
 	categoriesEnabled: z.object({
 		ROUTINE: z.boolean(),
@@ -67,6 +69,7 @@ export const updateNotificationPrefsInput = z
 		timezone: z.string().min(1).max(64).optional(),
 		morningRoutineTime: localTime.optional(),
 		eveningAttendanceTime: localTime.optional(),
+		assessmentReminderTime: localTime.optional(),
 		categoriesEnabled: z
 			.object({
 				ROUTINE: z.boolean().optional(),
