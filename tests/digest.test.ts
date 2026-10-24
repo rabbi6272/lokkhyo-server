@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
 	attendanceRisk,
 	buildAttendanceDigest,
+	buildDeadlineReminder,
 	buildMorningRoutine,
 	buildRiskAlert,
+	formatFriendlyDate,
 	formatTime12h,
 	isDue,
+	isLeadTimeDue,
 	isoWeek,
 	localClock,
 	MORNING_CATCH_UP_MINUTES,
@@ -148,5 +151,100 @@ describe("morning routine", () => {
 		expect(buildMorningRoutine([{ code: "CSE 3105", startTime: "09:00", room: "402" }]).body).toBe(
 			"You have 1 class today. CSE 3105 starts at 9 AM in Room 402.",
 		);
+	});
+});
+
+describe("isLeadTimeDue", () => {
+	const dueAt = new Date("2026-10-25T12:00:00Z");
+	const lead72h = 72;
+	const lead24h = 24;
+
+	it("returns false before the trigger window opens", () => {
+		// 72h before dueAt is 2026-10-22T12:00:00Z. At 11:59:59Z, it is not due yet.
+		const before72 = new Date("2026-10-22T11:59:59Z");
+		expect(isLeadTimeDue(dueAt, lead72h, [], before72)).toBe(false);
+	});
+
+	it("returns true at or after the trigger time if not already sent", () => {
+		const at72 = new Date("2026-10-22T12:00:00Z");
+		expect(isLeadTimeDue(dueAt, lead72h, [], at72)).toBe(true);
+
+		const after72 = new Date("2026-10-22T12:05:00Z");
+		expect(isLeadTimeDue(dueAt, lead72h, [], after72)).toBe(true);
+	});
+
+	it("returns false if this lead time was already sent", () => {
+		const after72 = new Date("2026-10-22T12:05:00Z");
+		expect(isLeadTimeDue(dueAt, lead72h, [{ leadTimeHours: 72 }], after72)).toBe(false);
+		// But a different lead time (24h) is still evaluated
+		expect(isLeadTimeDue(dueAt, lead24h, [{ leadTimeHours: 72 }], after72)).toBe(false); // not due yet
+	});
+
+	it("returns false if the deadline has already passed", () => {
+		const pastDue = new Date("2026-10-25T12:00:01Z");
+		expect(isLeadTimeDue(dueAt, lead24h, [], pastDue)).toBe(false);
+	});
+});
+
+describe("buildDeadlineReminder", () => {
+	it("formats multi-day reminders with course code and relative distance", () => {
+		const now = new Date("2026-10-22T10:00:00Z");
+		const dueAt = new Date("2026-10-25T10:00:00Z"); // 3 days away
+		const reminder = buildDeadlineReminder(
+			{
+				title: "CT 2 - Algorithm Design",
+				type: "ASSESSMENT",
+				assessmentType: "CT",
+				dueAt,
+				courseCode: "CSE 3105",
+				leadTimeHours: 72,
+			},
+			now,
+			"Asia/Dhaka",
+		);
+
+		expect(reminder.title).toBe("CSE 3105 · CT 2 - Algorithm Design ⏰");
+		expect(reminder.body).toContain("Due in 3 days");
+		expect(reminder.body).toContain("Tap to view details.");
+	});
+
+	it("formats near-due reminders with 'tomorrow' or hours", () => {
+		const now = new Date("2026-10-24T10:00:00Z");
+		const dueAt = new Date("2026-10-25T10:00:00Z"); // 24 hours away
+		const reminder = buildDeadlineReminder(
+			{
+				title: "Final Report",
+				type: "ASSESSMENT",
+				assessmentType: "PROJECT",
+				dueAt,
+				courseCode: "CSE 3107",
+				leadTimeHours: 24,
+			},
+			now,
+			"Asia/Dhaka",
+		);
+
+		expect(reminder.title).toBe("CSE 3107 · Final Report ⏰");
+		expect(reminder.body).toContain("Due tomorrow");
+	});
+
+	it("handles standalone reminders without course code", () => {
+		const now = new Date("2026-10-22T10:00:00Z");
+		const dueAt = new Date("2026-10-25T10:00:00Z");
+		const reminder = buildDeadlineReminder(
+			{
+				title: "Semester Fee Payment",
+				type: "REGISTRATION",
+				assessmentType: null,
+				dueAt,
+				courseCode: null,
+				leadTimeHours: 72,
+			},
+			now,
+			"Asia/Dhaka",
+		);
+
+		expect(reminder.title).toBe("Semester Fee Payment ⏰");
+		expect(reminder.body).toContain("Due in 3 days");
 	});
 });

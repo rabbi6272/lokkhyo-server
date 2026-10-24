@@ -26,22 +26,26 @@ type Lean = { createdAt: Date; updatedAt: Date; _id: Types.ObjectId } & Record<
 >;
 
 /**
- * FCM device registration.
+ * Device registration (Expo Push & FCM dual-run).
  *
- * `PUT` on the token: the same physical device re-registering is an update, not
- * a new row, so the unique index on `(userId, fcmToken)` can be relied on. A
- * token is also allowed to move between users, so the upsert is keyed on the
- * token and clears any previous owner rather than leaving a stale one able to
- * receive someone else's notifications.
+ * Naturally idempotent upsert keyed on `expoPushToken` (preferred) or `fcmToken`.
+ * A token moving between students is reassigned to the current caller.
  */
 export async function registerDevice(userId: string, input: RegisterDeviceInput) {
 	await connect();
+	const filter = input.expoPushToken
+		? { expoPushToken: input.expoPushToken }
+		: { fcmToken: input.fcmToken };
+
 	const doc = await DeviceModel.findOneAndUpdate(
-		{ fcmToken: input.fcmToken },
+		filter,
 		{
 			$set: {
 				userId,
 				platform: input.platform,
+				...(input.expoPushToken ? { expoPushToken: input.expoPushToken } : {}),
+				...(input.fcmToken ? { fcmToken: input.fcmToken } : {}),
+				pushProvider: input.pushProvider ?? (input.expoPushToken ? "EXPO" : "FCM"),
 				deviceName: input.deviceName ?? null,
 				lastSeenAt: new Date(),
 			},

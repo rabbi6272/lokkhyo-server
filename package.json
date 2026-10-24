@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:hono": "bun --watch src/index.ts",
     "build": "next build",
     "start": "next start",
+    "start:hono": "bun run src/index.ts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -14,6 +16,8 @@
   "dependencies": {
     "cloudinary": "^2.11.0",
     "firebase-admin": "13.10.0",
+    "hono": "^4.13.13",
+    "jose": "^6.2.13",
     "mongoose": "^9.10.2",
     "next": "16.3.4",
     "react": "19.2.8",

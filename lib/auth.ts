@@ -1,4 +1,4 @@
-import type { DecodedIdToken } from "firebase-admin/auth";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 import { connect } from "@/lib/db";
 import { firebaseAuth } from "@/lib/firebase";
@@ -11,12 +11,87 @@ export interface AuthContext {
 	user: UserDocument;
 }
 
+export interface DecodedToken {
+	uid: string;
+	email?: string;
+	name?: string | null;
+	picture?: string | null;
+}
+
+const GOOGLE_JWKS_URL = new URL(
+	"https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com",
+);
+const JWKS = createRemoteJWKSet(GOOGLE_JWKS_URL);
+
+export function getFirebaseProjectId(): string {
+	if (process.env.FIREBASE_PROJECT_ID) {
+		return process.env.FIREBASE_PROJECT_ID;
+	}
+	if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+		try {
+			const parsed = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+			if (parsed.project_id) return parsed.project_id;
+		} catch {}
+	}
+	return "lokkhyo-app";
+}
+
+/**
+ * Verify a Firebase ID token.
+ * Uses lightweight `jose` with remote JWKS caching by default, with automatic
+ * `firebase-admin` fallback.
+ */
+export async function verifyToken(token: string): Promise<DecodedToken> {
+	if (process.env.AUTH_VERIFIER === "firebase_admin") {
+		try {
+			const decoded = await firebaseAuth().verifyIdToken(token);
+			return {
+				uid: decoded.uid,
+				email: decoded.email,
+				name: decoded.name ?? null,
+				picture: decoded.picture ?? null,
+			};
+		} catch {
+			throw new AppError(ErrorCode.UNAUTHENTICATED, "Invalid or expired token");
+		}
+	}
+
+	const projectId = getFirebaseProjectId();
+	try {
+		const { payload } = await jwtVerify(token, JWKS, {
+			issuer: `https://securetoken.google.com/${projectId}`,
+			audience: projectId,
+		});
+
+		if (!payload.sub) {
+			throw new Error("Missing subject (uid) in token");
+		}
+
+		return {
+			uid: payload.sub,
+			email: typeof payload.email === "string" ? payload.email : undefined,
+			name: typeof payload.name === "string" ? payload.name : null,
+			picture: typeof payload.picture === "string" ? payload.picture : null,
+		};
+	} catch {
+		// Fallback to Firebase Admin SDK if available
+		try {
+			const decoded = await firebaseAuth().verifyIdToken(token);
+			return {
+				uid: decoded.uid,
+				email: decoded.email,
+				name: decoded.name ?? null,
+				picture: decoded.picture ?? null,
+			};
+		} catch {
+			throw new AppError(ErrorCode.UNAUTHENTICATED, "Invalid or expired token");
+		}
+	}
+}
+
 /**
  * Resolve the caller from a bearer token and return the request context.
- *
- * Verification is delegated entirely to the Firebase Admin SDK: it checks
- * signature, expiry, audience and issuer, which is not something to
- * reimplement. Nothing here trusts a client-supplied uid, email, or role.
+ * Nothing here trusts a client-supplied uid, email, or role.
  */
 export async function authenticate(request: Request): Promise<AuthContext> {
 	const header = request.headers.get("authorization");
@@ -32,14 +107,7 @@ export async function authenticate(request: Request): Promise<AuthContext> {
 		throw new AppError(ErrorCode.UNAUTHENTICATED, "Missing bearer token");
 	}
 
-	let decoded: DecodedIdToken;
-	try {
-		decoded = await firebaseAuth().verifyIdToken(token);
-	} catch {
-		// Deliberately vague: distinguishing "expired" from "forged" tells an
-		// attacker which part of their token to fix.
-		throw new AppError(ErrorCode.UNAUTHENTICATED, "Invalid or expired token");
-	}
+	const decoded = await verifyToken(token);
 
 	await connect();
 

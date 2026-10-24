@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "degreeCgpaThreshold": 2.2,
+  "scale": [
+    { "letterGrade": "A+", "minPercentage": 80, "gradePoint": 4.0, "countsTowardGPA": true, "countsAsEarnedCredit": true },
+    { "letterGrade": "A", "minPercentage": 75, "gradePoint": 3.75, "countsTowardGPA": true, "countsAsEarnedCredit": true },
+    { "letterGrade": "A-", "minPercentage": 70, "gradePoint": 3.5, "countsTowardGPA": true, "countsAsEarnedCredit": true },
+    { "letterGrade": "B+", "minPercentage": 65, "gradePoint": 3.25, "countsTowardGPA": true, "countsAsEarnedCredit": true },
+    { "letterGrade": "B", "minPercentage": 60, "gradePoint": 3.0, "countsTowardGPA": true, "countsAsEarnedCredit": true },
+    { "letterGrade": "B-", "minPercentage": 55, "gradePoint": 2.75, "countsTowardGPA": true, "countsAsEarnedCredit": true },
+    { "letterGrade": "C+", "minPercentage": 50, "gradePoint": 2.5, "countsTowardGPA": true, "countsAsEarnedCredit": true },
+    { "letterGrade": "C", "minPercentage": 45, "gradePoint": 2.25, "countsTowardGPA": true, "countsAsEarnedCredit": true },
+    { "letterGrade": "C-", "minPercentage": 40, "gradePoint": 2.0, "countsTowardGPA": true, "countsAsEarnedCredit": true },
+    { "letterGrade": "D", "minPercentage": 35, "gradePoint": 1.5, "countsTowardGPA": true, "countsAsEarnedCredit": true },
+    { "letterGrade": "F", "minPercentage": 0, "gradePoint": 0.0, "countsTowardGPA": false, "countsAsEarnedCredit": false },
+    { "letterGrade": "I", "minPercentage": null, "gradePoint": null, "countsTowardGPA": false, "countsAsEarnedCredit": false }
+  ],
+  "classificationBoundaries": [
+    { "classification": "FIRST_CLASS_WITH_HONORS", "minCgpa": 3.75 },
+    { "classification": "FIRST_CLASS", "minCgpa": 3.0 },
+    { "classification": "SECOND_CLASS", "minCgpa": 2.2 },
+    { "classification": "FAIL", "minCgpa": null }
+  ],
+  "gradeDerivations": [
+    { "marksObtained": 100, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "A+", "gradePoint": 4.0, "percentage": 100, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 80, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "A+", "gradePoint": 4.0, "percentage": 80, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 79.9, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "A", "gradePoint": 3.75, "percentage": 79.9, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 75, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "A", "gradePoint": 3.75, "percentage": 75, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 74.9, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "A-", "gradePoint": 3.5, "percentage": 74.9, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 70, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "A-", "gradePoint": 3.5, "percentage": 70, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 69.9, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "B+", "gradePoint": 3.25, "percentage": 69.9, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 65, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "B+", "gradePoint": 3.25, "percentage": 65, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 60, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "B", "gradePoint": 3.0, "percentage": 60, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 55, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "B-", "gradePoint": 2.75, "percentage": 55, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 50, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "C+", "gradePoint": 2.5, "percentage": 50, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 45, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "C", "gradePoint": 2.25, "percentage": 45, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 40, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "C-", "gradePoint": 2.0, "percentage": 40, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 35, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "D", "gradePoint": 1.5, "percentage": 35, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 34.9, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "F", "gradePoint": 0.0, "percentage": 34.9, "status": "BACKLOG", "countsTowardGPA": false, "countsAsEarnedCredit": false } },
+    { "marksObtained": 0, "maxMarks": 100, "incomplete": false, "expected": { "letterGrade": "F", "gradePoint": 0.0, "percentage": 0, "status": "BACKLOG", "countsTowardGPA": false, "countsAsEarnedCredit": false } },
+    { "marksObtained": 18, "maxMarks": 20, "incomplete": false, "expected": { "letterGrade": "A+", "gradePoint": 4.0, "percentage": 90, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 36, "maxMarks": 40, "incomplete": false, "expected": { "letterGrade": "A+", "gradePoint": 4.0, "percentage": 90, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 14, "maxMarks": 40, "incomplete": false, "expected": { "letterGrade": "D", "gradePoint": 1.5, "percentage": 35, "status": "PASSED", "countsTowardGPA": true, "countsAsEarnedCredit": true } },
+    { "marksObtained": 13, "maxMarks": 40, "incomplete": false, "expected": { "letterGrade": "F", "gradePoint": 0.0, "percentage": 32.5, "status": "BACKLOG", "countsTowardGPA": false, "countsAsEarnedCredit": false } },
+    { "marksObtained": 100, "maxMarks": 100, "incomplete": true, "expected": { "letterGrade": "I", "gradePoint": null, "percentage": 0, "status": "INCOMPLETE", "countsTowardGPA": false, "countsAsEarnedCredit": false } },
+    { "marksObtained": 0, "maxMarks": 100, "incomplete": true, "expected": { "letterGrade": "I", "gradePoint": null, "percentage": 0, "status": "INCOMPLETE", "countsTowardGPA": false, "countsAsEarnedCredit": false } }
+  ],
+  "gpaComputations": [
+    {
+      "name": "Standard credit-weighted mean",
+      "entries": [
+        { "credits": 4, "gradePoint": 4.0, "countsTowardGPA": true },
+        { "credits": 1, "gradePoint": 2.0, "countsTowardGPA": true }
+      ],
+      "expected": {
+        "gpa": 3.6,
+        "totalCredits": 5,
+        "totalWeightedPoints": 18,
+        "coursesCounted": 2
+      }
+    },
+    {
+      "name": "Excludes F from both numerator and denominator",
+      "entries": [
+        { "credits": 3, "gradePoint": 4.0, "countsTowardGPA": true },
+        { "credits": 3, "gradePoint": 0.0, "countsTowardGPA": false }
+      ],
+      "expected": {
+        "gpa": 4.0,
+        "totalCredits": 3,
+        "totalWeightedPoints": 12,
+        "coursesCounted": 1
+      }
+    },
+    {
+      "name": "Excludes I with null gradePoint",
+      "entries": [
+        { "credits": 3, "gradePoint": 3.5, "countsTowardGPA": true },
+        { "credits": 3, "gradePoint": null, "countsTowardGPA": false }
+      ],
+      "expected": {
+        "gpa": 3.5,
+        "totalCredits": 3,
+        "totalWeightedPoints": 10.5,
+        "coursesCounted": 1
+      }
+    },
+    {
+      "name": "Zero credits returns null GPA",
+      "entries": [
+        { "credits": 3, "gradePoint": 0.0, "countsTowardGPA": false }
+      ],
+      "expected": {
+        "gpa": null,
+        "totalCredits": 0,
+        "totalWeightedPoints": 0,
+        "coursesCounted": 0
+      }
+    },
+    {
+      "name": "Floating point round2 boundary (3.745 -> 3.75)",
+      "entries": [
+        { "credits": 1000, "gradePoint": 3.745, "countsTowardGPA": true }
+      ],
+      "expected": {
+        "gpa": 3.75,
+        "totalCredits": 1000,
+        "totalWeightedPoints": 3745,
+        "coursesCounted": 1
+      }
+    }
+  ],
+  "cgpaProjections": [
+    {
+      "name": "Projected CGPA from base unrounded sums",
+      "base": { "totalCredits": 15, "totalWeightedPoints": 55.5 },
+      "added": [
+        { "credits": 3, "gradePoint": 4.0, "countsTowardGPA": true }
+      ],
+      "expected": {
+        "projectedCgpa": 3.75,
+        "projectedCredits": 18,
+        "projectedWeightedPoints": 67.5,
+        "classification": "FIRST_CLASS_WITH_HONORS",
+        "isDegreeEligible": true
+      }
+    },
+    {
+      "name": "Retake replaces previous attempt points and credits",
+      "base": { "totalCredits": 15, "totalWeightedPoints": 55.5 },
+      "retake": { "oldCredits": 3, "oldGradePoint": 1.5 },
+      "added": [
+        { "credits": 3, "gradePoint": 3.75, "countsTowardGPA": true }
+      ],
+      "expected": {
+        "projectedCgpa": 4.15,
+        "projectedCredits": 15,
+        "projectedWeightedPoints": 62.25,
+        "classification": "FIRST_CLASS_WITH_HONORS",
+        "isDegreeEligible": true
+      }
+    }
+  ],
+  "classifications": [
+    { "cgpa": 3.75, "expected": { "classification": "FIRST_CLASS_WITH_HONORS", "isDegreeEligible": true } },
+    { "cgpa": 3.0, "expected": { "classification": "FIRST_CLASS", "isDegreeEligible": true } },
+    { "cgpa": 2.2, "expected": { "classification": "SECOND_CLASS", "isDegreeEligible": true } },
+    { "cgpa": 2.19, "expected": { "classification": "FAIL", "isDegreeEligible": false } },
+    { "cgpa": null, "expected": { "classification": "IN_PROGRESS", "isDegreeEligible": false } }
+  ],
+  "gradeImprovement": [
+    { "letterGrade": "D", "cgpa": 2.19, "expected": true },
+    { "letterGrade": "D", "cgpa": 2.2, "expected": false },
+    { "letterGrade": "D", "cgpa": null, "expected": false },
+    { "letterGrade": "C-", "cgpa": 2.0, "expected": false },
+    { "letterGrade": "F", "cgpa": 1.5, "expected": false }
+  ]
+}
+
