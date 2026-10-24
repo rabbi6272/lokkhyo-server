@@ -24,9 +24,9 @@ export async function connect(): Promise<typeof mongoose> {
 	// would make `next build` require a live DATABASE_URL, so a build could not
 	// run in an environment that has no secret configured — and a route module
 	// that merely imports this file would fail to compile.
-	const uri = process.env.DATABASE_URL;
+	const uri = process.env.DATABASE_URL || process.env.MONGODB_URI;
 	if (!uri) {
-		throw new Error("DATABASE_URL environment variable is required");
+		throw new Error("DATABASE_URL or MONGODB_URI environment variable is required");
 	}
 
 	const connection = mongoose

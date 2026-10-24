@@ -47,7 +47,7 @@ describe("deadlineReminders dispatch step", () => {
 		// Due in 20 hours -> 24h lead time window has opened!
 		const dueAt = new Date("2026-10-25T08:00:00Z");
 
-		vi.mocked(dueReminders).mockResolvedValueOnce([
+		(dueReminders as any).mockResolvedValueOnce([
 			{
 				_id: deadlineId,
 				title: "CT 2",
@@ -60,7 +60,7 @@ describe("deadlineReminders dispatch step", () => {
 			},
 		]);
 
-		vi.mocked(claimReminder).mockResolvedValueOnce(true);
+		(claimReminder as any).mockResolvedValueOnce(true);
 
 		const sentCount = await deadlineReminders(userId, timezone, now);
 
@@ -81,7 +81,7 @@ describe("deadlineReminders dispatch step", () => {
 		// 24h window has not opened yet (50h > 24h).
 		const dueAt = new Date("2026-10-25T02:00:00Z");
 
-		vi.mocked(dueReminders).mockResolvedValueOnce([
+		(dueReminders as any).mockResolvedValueOnce([
 			{
 				_id: deadlineId,
 				title: "Assignment 1",
@@ -106,7 +106,7 @@ describe("deadlineReminders dispatch step", () => {
 		const dueAt = new Date("2026-10-25T08:00:00Z");
 
 		// Both 72 and 24 are in remindersSent
-		vi.mocked(dueReminders).mockResolvedValueOnce([
+		(dueReminders as any).mockResolvedValueOnce([
 			{
 				_id: deadlineId,
 				title: "CT 2",
@@ -133,7 +133,7 @@ describe("deadlineReminders dispatch step", () => {
 		const now = new Date("2026-10-24T12:00:00Z");
 		const dueAt = new Date("2026-10-25T08:00:00Z");
 
-		vi.mocked(dueReminders).mockResolvedValueOnce([
+		(dueReminders as any).mockResolvedValueOnce([
 			{
 				_id: deadlineId,
 				title: "CT 2",
@@ -147,7 +147,7 @@ describe("deadlineReminders dispatch step", () => {
 		]);
 
 		// Another worker claimed it first
-		vi.mocked(claimReminder).mockResolvedValueOnce(false);
+		(claimReminder as any).mockResolvedValueOnce(false);
 
 		const sentCount = await deadlineReminders(userId, timezone, now);
 
@@ -157,7 +157,7 @@ describe("deadlineReminders dispatch step", () => {
 	});
 
 	it("returns 0 and makes no calls when there are no due deadlines", async () => {
-		vi.mocked(dueReminders).mockResolvedValueOnce([]);
+		(dueReminders as any).mockResolvedValueOnce([]);
 
 		const sentCount = await deadlineReminders(userId, timezone, new Date());
 
