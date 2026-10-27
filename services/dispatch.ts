@@ -25,6 +25,8 @@ import { processPendingPushReceipts, pruneStaleDevices } from "@/services/expoPu
 import { getNotificationPrefs } from "@/services/notification";
 import { claimPush, sendPush } from "@/services/push";
 
+const DUPLICATE_KEY = 11000;
+
 /**
  * The scheduled dispatch: run every ~5 minutes by an external cron hitting
  * `/api/v1/internal/dispatch`.
@@ -84,7 +86,11 @@ export async function runDispatch(
 				},
 			},
 			{ upsert: true, returnDocument: "after" },
-		);
+		).catch((error: { code?: number }) => {
+			// Lock held: the filter misses, so the upsert collides with the existing `_id`.
+			if (error.code === DUPLICATE_KEY) return null;
+			throw error;
+		});
 
 		if (!lock) {
 			console.log("[dispatch] lock busy; skipping overlapping dispatch run");
