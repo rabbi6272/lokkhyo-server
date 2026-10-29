@@ -11,24 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'yarn'
-          cache-dependency-path: yarn.lock
+      - uses: oven-sh/setup-bun@v2
       - name: Install dependencies
-        # Falls back to a plain install if no lockfile has been committed yet;
-        # commit yarn.lock to make CI fully reproducible.
-        run: |
-          if [ -f yarn.lock ]; then
-            yarn install --frozen-lockfile
-          else
-            yarn install
-          fi
+        run: bun install --frozen-lockfile
       - name: Typecheck
-        run: yarn typecheck
+        run: bun run typecheck
       - name: Lint
-        run: yarn lint
+        run: bun run lint
       - name: Test
-        run: yarn test
+        run: bun run test

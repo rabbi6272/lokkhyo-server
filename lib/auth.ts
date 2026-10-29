@@ -89,6 +89,9 @@ export async function verifyToken(token: string): Promise<DecodedToken> {
 	}
 }
 
+/** How stale `lastLoginAt` may get before a request refreshes it. */
+const LAST_LOGIN_REFRESH_MS = 60 * 60 * 1000;
+
 /**
  * Resolve the caller from a bearer token and return the request context.
  * Nothing here trusts a client-supplied uid, email, or role.
@@ -110,6 +113,18 @@ export async function authenticate(request: Request): Promise<AuthContext> {
 	const decoded = await verifyToken(token);
 
 	await connect();
+
+	// Most requests come from a known user: a read is enough, and skipping the
+	// write keeps a dashboard load from costing one primary write per request.
+	const existing = await User.findOne({ firebaseUid: decoded.uid }).lean<UserDocument>();
+	if (
+		existing &&
+		(decoded.email === undefined || existing.email === decoded.email) &&
+		existing.lastLoginAt &&
+		Date.now() - new Date(existing.lastLoginAt).getTime() < LAST_LOGIN_REFRESH_MS
+	) {
+		return { uid: decoded.uid, user: existing };
+	}
 
 	// Provision on first sight with a single atomic upsert. A read-then-create
 	// would race: two concurrent first requests would each see "no user" and

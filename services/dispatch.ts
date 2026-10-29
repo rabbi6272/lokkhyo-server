@@ -175,6 +175,8 @@ async function dispatchForUser(userId: string, now: Date): Promise<number> {
 	return sent;
 }
 
+const delivered = (devices: number): number => (devices > 0 ? 1 : 0);
+
 async function morningRoutine(userId: string, timezone: string, clock: LocalClock): Promise<number> {
 	if (!(await claimPush(userId, `morning-routine:${clock.date}`))) return 0;
 
@@ -187,8 +189,8 @@ async function morningRoutine(userId: string, timezone: string, clock: LocalCloc
 		user?.name,
 	);
 
-	await sendPush(userId, { category: "ROUTINE", title: text.title, body: text.body, link: "/routine" });
-	return 1;
+	// Count only pushes some device accepted, so the cron report reflects real delivery.
+	return delivered(await sendPush(userId, { category: "ROUTINE", title: text.title, body: text.body, link: "/routine" }));
 }
 
 async function eveningDigest(userId: string, timezone: string, clock: LocalClock): Promise<number> {
@@ -210,13 +212,12 @@ async function eveningDigest(userId: string, timezone: string, clock: LocalClock
 	if (!digest) return 0;
 	if (!(await claimPush(userId, `attendance-digest:${clock.date}`))) return 0;
 
-	await sendPush(userId, {
+	return delivered(await sendPush(userId, {
 		category: "ATTENDANCE",
 		title: digest.title,
 		body: digest.body,
 		link: "/(tabs)/attendance",
-	});
-	return 1;
+	}));
 }
 
 /** Courses of the active term(s) — an archived semester's attendance is final. */
@@ -259,13 +260,12 @@ async function riskAlerts(userId: string, clock: LocalClock): Promise<number> {
 		if (!(await claimPush(userId, `attendance-risk:${String(course._id)}:${risk.level}:${week}`))) continue;
 
 		const alert = buildRiskAlert(course.code, courseCounts, risk);
-		await sendPush(userId, {
+		sent += delivered(await sendPush(userId, {
 			category: "ATTENDANCE_RISK",
 			title: alert.title,
 			body: alert.body,
 			link: `/course/${String(course._id)}`,
-		});
-		sent += 1;
+		}));
 	}
 	return sent;
 }
@@ -318,13 +318,12 @@ export async function deadlineReminders(
 				timezone,
 			);
 
-			await sendPush(userId, {
+			sent += delivered(await sendPush(userId, {
 				category: "DEADLINE",
 				title: text.title,
 				body: text.body,
 				link: deadline.courseId ? `/course/${String(deadline.courseId)}` : null,
-			});
-			sent += 1;
+			}));
 		}
 	}
 	return sent;

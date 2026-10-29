@@ -74,6 +74,28 @@ describe("deadlineReminders dispatch step", () => {
 		});
 	});
 
+	it("does not count a reminder no device accepted", async () => {
+		(dueReminders as any).mockResolvedValueOnce([
+			{
+				_id: deadlineId,
+				title: "CT 2",
+				type: "ASSESSMENT",
+				assessmentType: "CT",
+				dueAt: new Date("2026-10-25T08:00:00Z"),
+				courseId,
+				reminderLeadTimes: [24],
+				remindersSent: [],
+			},
+		]);
+		(claimReminder as any).mockResolvedValueOnce(true);
+		(sendPush as any).mockResolvedValueOnce(0);
+
+		const sentCount = await deadlineReminders(userId, timezone, new Date("2026-10-24T12:00:00Z"));
+
+		expect(sendPush).toHaveBeenCalledOnce();
+		expect(sentCount).toBe(0);
+	});
+
 	it("does not send push if the lead time has not yet arrived", async () => {
 		const now = new Date("2026-10-23T00:00:00Z");
 		// Due in 50 hours. Lead times are [72, 24].

@@ -132,24 +132,12 @@ Each deadline stores its reminder configuration and atomic delivery ledger:
 
 ---
 
-## Server Runtime Options
+## Server Runtime
 
-The server can run in two modes:
+Hono on Bun, deployed to Render with Docker (`Dockerfile`, `render.yaml`).
 
-### 1. Hono on Bun (Production Target)
-- High-performance, portable API runtime built with Hono and served directly by Bun.
-- Verified with Docker (`Dockerfile`) and Render (`render.yaml`).
-- Run commands:
-  ```bash
-  bun run dev:hono    # Local development with hot reload
-  bun run start:hono  # Production boot (src/index.ts)
-  ```
-
-### 2. Next.js (Dual-Run / Backward-Compatibility)
-- Existing Next.js route handlers (`app/api/v1/**`).
-- Run commands:
-  ```bash
-  bun run dev         # Next.js development server
-  bun run start       # Next.js production server
-  ```
+```bash
+bun run dev    # Local development with hot reload
+bun run start  # Production boot (src/index.ts)
+```
 

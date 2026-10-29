@@ -7,14 +7,13 @@ export const loggingMiddleware: MiddlewareHandler = async (c, next) => {
 	}
 
 	const start = Date.now();
-	console.log(`→ ${c.req.method} ${c.req.path}`);
 	await next();
 	const ms = Date.now() - start;
 	const status = c.res.status;
 	const uid = (c.get("auth" as any) as any)?.uid
 		? ` uid=${(c.get("auth" as any) as any).uid}`
 		: "";
-	const line = `← ${c.req.method} ${c.req.path} ${status} ${ms}ms${uid}`;
+	const line = `${c.req.method} ${c.req.path} ${status} ${ms}ms${uid}`;
 
 	if (status >= 400) {
 		console.warn(line);

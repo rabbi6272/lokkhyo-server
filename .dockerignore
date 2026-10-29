@@ -1,0 +1,10 @@
+# Secrets and local state must never reach the image.
+.env*
+*service*account*.json
+node_modules
+.git
+.github
+tests
+fixtures
+coverage
+*.md
