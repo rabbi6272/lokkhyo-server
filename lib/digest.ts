@@ -224,3 +224,87 @@ export function buildMorningRoutine(classes: MorningClass[], studentName?: strin
 		.join(", ");
 	return { title, body: `You have ${sorted.length} classes today: ${list}.` };
 }
+
+export interface DeadlineReminderInput {
+	title: string;
+	type: string;
+	assessmentType?: string | null;
+	dueAt: Date;
+	courseCode?: string | null;
+	leadTimeHours: number;
+}
+
+/**
+ * Whether a specific lead-time reminder for a deadline is due to fire:
+ * 1. The deadline has not already passed (`now < dueAt`).
+ * 2. This lead time has not already been sent.
+ * 3. `now` has reached or passed the trigger instant (`dueAt - leadTimeHours`).
+ */
+export function isLeadTimeDue(
+	dueAt: Date,
+	leadTimeHours: number,
+	remindersSent: Array<{ leadTimeHours: number }>,
+	now: Date,
+): boolean {
+	if (now.getTime() >= dueAt.getTime()) return false;
+	const alreadySent = remindersSent.some((r) => r.leadTimeHours === leadTimeHours);
+	if (alreadySent) return false;
+	const triggerTime = dueAt.getTime() - leadTimeHours * 3600 * 1000;
+	return now.getTime() >= triggerTime;
+}
+
+/**
+ * Formats a date into a readable string in the student's timezone (e.g. "Mon, Oct 27" or "Oct 24, 2:00 PM").
+ */
+export function formatFriendlyDate(
+	date: Date,
+	timeZone: string = FALLBACK_TIMEZONE,
+	includeTime = false,
+): string {
+	try {
+		if (includeTime) {
+			return new Intl.DateTimeFormat("en-US", {
+				timeZone,
+				month: "short",
+				day: "numeric",
+				hour: "numeric",
+				minute: "2-digit",
+			}).format(date);
+		}
+		return new Intl.DateTimeFormat("en-US", {
+			timeZone,
+			weekday: "short",
+			month: "short",
+			day: "numeric",
+		}).format(date);
+	} catch {
+		return formatFriendlyDate(date, FALLBACK_TIMEZONE, includeTime);
+	}
+}
+
+/**
+ * Builds notification content for an upcoming deadline reminder push.
+ */
+export function buildDeadlineReminder(
+	input: DeadlineReminderInput,
+	now: Date,
+	timezone: string = FALLBACK_TIMEZONE,
+): PushText {
+	const header = input.courseCode ? `${input.courseCode} · ${input.title}` : input.title;
+	const diffMs = input.dueAt.getTime() - now.getTime();
+	const diffHours = Math.max(1, Math.round(diffMs / 3_600_000));
+
+	let timePhrase: string;
+	if (diffHours < 24) {
+		timePhrase = diffHours === 1 ? "in 1 hour" : `in ${diffHours} hours`;
+	} else {
+		const days = Math.round(diffHours / 24);
+		timePhrase = days === 1 ? "tomorrow" : `in ${days} days`;
+	}
+
+	const dateStr = formatFriendlyDate(input.dueAt, timezone, diffHours <= 36);
+	return {
+		title: `${header} ⏰`,
+		body: `Due ${timePhrase} (${dateStr}). Tap to view details.`,
+	};
+}

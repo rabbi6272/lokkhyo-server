@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: lokkhyo-api
+    runtime: docker
+    region: singapore
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: PUSH_PROVIDER
+        value: both
+      - key: CLOUDINARY_URL
+        sync: false
+

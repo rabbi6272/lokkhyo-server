@@ -49,4 +49,4 @@ AGENTS.md
 CLAUDE.md
 
 package-lock.json
-yarn.lock
+# yarn.lock is committed so CI can install with --frozen-lockfile

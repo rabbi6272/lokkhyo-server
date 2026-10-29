@@ -8,9 +8,14 @@ import {
 	platform,
 } from "@/schemas/common";
 
+export const pushProvider = z.enum(["FCM", "EXPO"]);
+export type PushProvider = z.infer<typeof pushProvider>;
+
 export const deviceSchema = z.object({
 	id: DeviceIdSchema,
-	fcmToken: z.string(),
+	fcmToken: z.string().nullable().optional(),
+	expoPushToken: z.string().nullable().optional(),
+	pushProvider: pushProvider.default("EXPO"),
 	platform,
 	deviceName: z.string().nullable(),
 	createdAt: isoDateTime,
@@ -20,15 +25,20 @@ export const deviceSchema = z.object({
 export type Device = z.infer<typeof deviceSchema>;
 
 /**
- * Registering a device is an upsert on `(userId, fcmToken)`, so a client that
- * re-registers on every launch is naturally idempotent and needs no
- * `Idempotency-Key`.
+ * Registering a device is an upsert on `(userId, expoPushToken)` or `(userId, fcmToken)`,
+ * so a client re-registering on launch is naturally idempotent.
  */
-export const registerDeviceInput = z.strictObject({
-	fcmToken: z.string().min(8).max(4096),
-	platform,
-	deviceName: z.string().max(120).optional(),
-});
+export const registerDeviceInput = z
+	.strictObject({
+		fcmToken: z.string().min(8).max(4096).optional(),
+		expoPushToken: z.string().min(8).max(4096).optional(),
+		pushProvider: pushProvider.optional(),
+		platform,
+		deviceName: z.string().max(120).optional(),
+	})
+	.refine((data) => Boolean(data.expoPushToken || data.fcmToken), {
+		message: "Either expoPushToken or fcmToken must be provided",
+	});
 
 export type RegisterDeviceInput = z.infer<typeof registerDeviceInput>;
 

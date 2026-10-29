@@ -5,7 +5,9 @@ import { defineModel } from "@/lib/model";
 const DeviceSchema = new Schema(
 	{
 		userId: { type: String, required: true, index: true },
-		fcmToken: { type: String, required: true },
+		fcmToken: { type: String, default: null },
+		expoPushToken: { type: String, default: null },
+		pushProvider: { type: String, enum: ["FCM", "EXPO"], default: "EXPO" },
 		platform: { type: String, enum: ["ANDROID", "IOS"], required: true },
 		deviceName: { type: String, default: null },
 		lastSeenAt: { type: Date, default: Date.now },
@@ -14,11 +16,12 @@ const DeviceSchema = new Schema(
 );
 
 /**
- * Makes device registration an upsert. A client that re-registers on every
- * launch — which is the normal pattern for FCM tokens, since they rotate — is
- * idempotent for free, with no idempotency key involved.
+ * Natural upsert indexes on tokens. A client re-registering on launch
+ * updates its device record idempotently.
  */
-DeviceSchema.index({ userId: 1, fcmToken: 1 }, { unique: true });
+DeviceSchema.index({ expoPushToken: 1 }, { unique: true, sparse: true });
+DeviceSchema.index({ userId: 1, fcmToken: 1 }, { sparse: true });
+DeviceSchema.index({ lastSeenAt: 1 });
 
 export type DeviceDocument = InferSchemaType<typeof DeviceSchema> & { _id: unknown };
 

@@ -185,7 +185,9 @@ export async function claimReminder(
 	return claimed.modifiedCount === 1;
 }
 
-/** Deadlines whose reminder window has opened, for the notification worker. */
+/**
+ * Deadlines whose reminder window has opened, for the notification worker.
+ */
 export async function dueReminders(userId: string, now = new Date()) {
 	await connect();
 	return DeadlineModel.find({ userId, dueAt: { $gt: now } })
@@ -195,6 +197,7 @@ export async function dueReminders(userId: string, now = new Date()) {
 		title: string;
 		dueAt: Date;
 		type: string;
+		assessmentType: string | null;
 		courseId: Types.ObjectId | null;
 		reminderLeadTimes: number[];
 		remindersSent: Array<{ leadTimeHours: number; sentAt: Date }>;

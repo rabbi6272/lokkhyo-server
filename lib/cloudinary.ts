@@ -17,13 +17,18 @@ import { photoPublicId } from "@/lib/photo";
  * functions becomes a generic 500.
  */
 function uploader() {
+	if (process.env.CLOUDINARY_URL) {
+		cloudinary.config(true);
+		return cloudinary.uploader;
+	}
+
 	const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 	const apiKey = process.env.CLOUDINARY_API_KEY;
 	const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
 	if (!cloudName || !apiKey || !apiSecret) {
 		throw internal(
-			"Photo storage is not configured on this server (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)",
+			"Photo storage is not configured on this server (CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)",
 		);
 	}
 
