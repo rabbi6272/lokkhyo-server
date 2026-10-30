@@ -7,7 +7,7 @@ import {
 	putAttendanceInput,
 } from "@/schemas/attendance";
 import { listAssessmentsQuery } from "@/schemas/assessment";
-import { cascadeQuery } from "@/schemas/common";
+import { cascadeQuery, credits } from "@/schemas/common";
 import { MAX_LIMIT, limitQuery } from "@/lib/pagination";
 import { createSemesterInput, updateSemesterInput } from "@/schemas/semester";
 import { createResultInput, updateResultInput } from "@/schemas/result";
@@ -214,5 +214,19 @@ describe("profile fields on /me", () => {
 		expect(parsed.department).toBeNull();
 		expect(parsed.currentSemesterId).toBeNull();
 		expect(parsed.targetCgpa).toBeNull();
+	});
+});
+
+describe("credits", () => {
+	it("accepts RUET lab credits in quarter steps", () => {
+		expect(credits.parse(0.75)).toBe(0.75);
+		expect(credits.parse(1.5)).toBe(1.5);
+		expect(credits.parse(3)).toBe(3);
+	});
+
+	it("rejects credits off the quarter grid or out of range", () => {
+		expect(credits.safeParse(0.3).success).toBe(false);
+		expect(credits.safeParse(0.25).success).toBe(false);
+		expect(credits.safeParse(12.5).success).toBe(false);
 	});
 });

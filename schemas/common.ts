@@ -176,12 +176,12 @@ export const classification = z.enum([
 ]);
 export type Classification = z.infer<typeof classification>;
 
-/** Credits are normally 0.5–4.0 in 0.5 steps; fractions are allowed. */
+/** Credits in 0.25 steps: RUET labs are 0.75 and 1.5, theory courses usually 2–4. */
 export const credits = z.coerce
 	.number()
 	.min(0.5)
 	.max(12)
-	.multipleOf(0.5, "Credits must be a multiple of 0.5");
+	.multipleOf(0.25, "Credits must be a multiple of 0.25");
 
 /** Percentage points, used for attendance and any similar bounded value. */
 export const percentage = z.coerce.number().min(0).max(100);
